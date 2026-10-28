@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Binary executables and large tools
+*.exe
+ffmpeg
+yt-dlp
+*.zip
+*.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db
