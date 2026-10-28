@@ -131,7 +131,8 @@ app.use('/api/payments', createPaymentsRouter({
     requireAuth: (...a) => requireAuth(...a)
 }));
 
-const PORT        = Number(process.env.SPACEKHAZANA_PORT || 3006);
+// Render/Railway/Fly inject PORT; SPACEKHAZANA_PORT still wins for local use.
+const PORT        = Number(process.env.SPACEKHAZANA_PORT || process.env.PORT || 3006);
 const DATA_DIR    = DATA_ROOT;
 // ─── STORAGE PATH — set SPACEKHAZANA_STORAGE env variable to store files
 //  anywhere on your PC, e.g.:
@@ -162,7 +163,11 @@ function assertStorageUnderUserRoot(dir) {
 }
 
 [DATA_DIR, UPLOADS_DIR].forEach(d => ensureDirectory(d));
-assertStorageUnderUserRoot(UPLOADS_DIR);
+// In Docker/Render the persistent disk lives outside the home folder (e.g. /var/data),
+// so the home-folder guard is skipped when SPACEKHAZANA_ALLOW_ANY_STORAGE=true.
+if (String(process.env.SPACEKHAZANA_ALLOW_ANY_STORAGE || '').toLowerCase() !== 'true') {
+    assertStorageUnderUserRoot(UPLOADS_DIR);
+}
 
 // Chunked uploads no longer stage chunks in a separate temp folder -- see
 // the /api/files/upload/* handlers below. Each chunk is written directly
@@ -821,6 +826,10 @@ const ALLOWED_ORIGINS = new Set([
     'http://localhost:3000',
     'http://127.0.0.1:3000'
 ]);
+// Frontend origins (e.g. your Vercel domain) come from FRONTEND_ORIGINS,
+// comma-separated: https://spacekhazana.vercel.app,https://www.example.com
+String(process.env.FRONTEND_ORIGINS || '').split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean)
+    .forEach(o => ALLOWED_ORIGINS.add(o));
 
 app.use((req, res, next) => {
     const origin = req.headers.origin;

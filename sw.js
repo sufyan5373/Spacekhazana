@@ -10,9 +10,13 @@
      pings and third-party origins always go straight to the network.
 */
 
-const VERSION = 'v31';
+const VERSION = 'v32';
 const SHELL_CACHE = `sk-shell-${VERSION}`;
 const RUNTIME_CACHE = `sk-runtime-${VERSION}`;
+
+// Backend on Render (must match PROD_API_HOST in index.html). Frontend is on
+// Vercel, so API calls are cross-origin and need to be recognised here.
+const API_ORIGIN = 'https://spacekhazana-api.onrender.com';
 
 // Third-party hosts whose static files are part of the app shell.
 const CDN_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
@@ -188,7 +192,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/downloads/')) return;
 
   const sameOrigin = url.origin === self.location.origin;
-  if (!sameOrigin && !CDN_HOSTS.includes(url.hostname)) return; // favicons, fonts, etc.
+  const isApiOrigin = url.origin === API_ORIGIN;
+  if (!sameOrigin && !isApiOrigin && !CDN_HOSTS.includes(url.hostname)) return; // favicons, fonts, etc.
 
   // Full page navigations -> app shell, cache-first with background refresh.
   // Query strings (e.g. /?stay=1) must still hit the cached page offline.
@@ -203,7 +208,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (sameOrigin && isApiRequest(url)) {
+  if ((sameOrigin || isApiOrigin) && isApiRequest(url)) {
     if (!isCacheableApi(url)) return; // auth, ping, live jobs: network only
     // No cache and no network: fail like a normal offline fetch so the
     // app's own offline handling runs (a fake 200 made callers think the

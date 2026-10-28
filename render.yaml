@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: spacekhazana-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter            # persistent disks need a paid plan
+    healthCheckPath: /api/ping
+    disk:
+      name: spacekhazana-data
+      mountPath: /var/data
+      sizeGB: 10
+    envVars:
+      - key: FRONTEND_ORIGINS
+        value: https://YOUR-APP.vercel.app
+      - key: SPACEKHAZANA_ORIGIN
+        value: https://YOUR-APP.vercel.app
+      - key: SPACEKHAZANA_RP_ID
+        value: YOUR-APP.vercel.app
+      - key: SPACEKHAZANA_DATA
+        value: /var/data/data
+      - key: SPACEKHAZANA_STORAGE
+        value: /var/data/uploads
+      - key: SPACEKHAZANA_ALLOW_ANY_STORAGE
+        value: "true"
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_PASS
+        sync: false
