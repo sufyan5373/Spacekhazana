@@ -1,0 +1,3099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // Runs immediately, before this page paints anything. If a session is
+  // already saved (from a previous login), skip the landing page entirely
+  // and go straight into the app — this is what makes "spacekhazana.com"
+  // land logged-in users on their drive instead of the marketing page.
+  (function () {
+    var stayOnSite = /[?&]stay=1(&|$)/.test(window.location.search);
+    if (stayOnSite) return; // explicit "Visit Site Page" link from the account menu — don't bounce back
+    try {
+      var hasToken = !!localStorage.getItem('spacekhazana_token');
+      var hasUser  = !!localStorage.getItem('spacekhazana_user');
+      if (hasToken && hasUser) {
+        window.location.replace('/app');
+      }
+    } catch (e) { /* storage blocked: just show the landing page */ }
+  })();
+</script>
+<title>SpaceKhazana — A treasury for everything you keep</title>
+<meta name="description" content="SpaceKhazana is a private, self-hosted cloud for your files, photos, music and passwords. 30 GB free, no card required.">
+<meta name="theme-color" content="#F5F8FC">
+<link rel="canonical" href="https://spacekhazana.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SpaceKhazana">
+<meta property="og:title" content="SpaceKhazana — A treasury for everything you keep">
+<meta property="og:description" content="A private cloud you actually own: files, photos, music and a password vault. 30 GB free.">
+<meta property="og:url" content="https://spacekhazana.com/">
+<meta property="og:image" content="https://spacekhazana.com/images/logo.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,100..900,0..100,0..1;1,9..144,100..900,0..100,0..1&family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+
+
+<style>
+
+  /* Display font: Sora Carnel (retro serif). It's a commercial font, so drop the
+     files into /fonts/ (SoraCarnel.woff2 or .otf) and it's picked up automatically.
+     Until then Fraunces (soft + wonky) is the closest free stand-in. */
+  @font-face{
+    font-family:'Sora Carnel';
+    src: local('Sora Carnel'), local('SoraCarnel'),
+         url('fonts/SoraCarnel.woff2') format('woff2'),
+         url('fonts/SoraCarnel.otf') format('opentype');
+    font-display: swap;
+  }
+  :root{
+    --display: 'Sora Carnel','Fraunces',Georgia,serif;
+    --void:#F5F8FC;
+    --panel:#FFFFFF;
+    --panel-2:#EEF4FC;
+    --line: rgba(30,60,110,0.10);
+    --violet:#2F6FE4;
+    --violet-dim: #9DBFF5;
+    --blue:#1B4C9C;
+    --gold:#2A5DB0;
+    --gold-dim:#8FB6E8;
+    --cream:#12233F;
+    --muted:#5A6C85;
+    --radius: 18px;
+
+    --treasure-gold:#E8B84B;
+    --treasure-gold-dim:#8A6423;
+    --treasure-wood:#2B1C10;
+    --treasure-wood-2:#4A2F16;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 70% 45% at 15% -8%, rgba(47,111,228,0.14), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 10%, rgba(27,76,156,0.12), transparent 60%),
+      var(--void);
+    color:var(--cream);
+    font-family:'Sora', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  h1,h2,h3, .display{
+    font-family:var(--display);
+    font-variation-settings:'SOFT' 100, 'WONK' 1;
+    font-optical-sizing:auto;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+
+  .mono{
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  a{ color:inherit; text-decoration:none; }
+  img{ display:block; max-width:100%; }
+
+  .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    padding-inline:32px;
+  }
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--gold);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:22px; height:1px;
+    background:var(--gold-dim);
+    display:inline-block;
+  }
+
+  /* ---------- SKY BACKGROUND (live canvas, driven by scroll — see the sky script at the bottom) ---------- */
+  #sky {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; pointer-events: none;
+    background:
+      radial-gradient(ellipse 50% 45% at 72% 16%, rgba(170,215,255,.75), rgba(140,200,255,0) 70%),
+      linear-gradient(180deg, #2f6db8 0%, #4a8ccf 28%, #6fa8e0 58%, #9cc9f0 85%, #c6e2f7 100%);
+  }
+  #sky canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; }
+  .page-content { position: relative; z-index: 1; }   /* put your own content in this */
+  #ck-pin{ background: transparent !important; }
+
+  /* ---------- Scroll progress bar ---------- */
+  #scrollBar{
+    position:fixed; top:0; left:0; height:3px; width:100%;
+    z-index:120; pointer-events:none;
+    transform-origin:0 50%; transform:scaleX(0);
+    background: var(--violet);
+  }
+
+  /* ---------- Scroll-reveal helpers ---------- */
+  .divider::before{ transform-origin:right center; }
+  .divider::after{ transform-origin:left center; }
+  @media (prefers-reduced-motion: reduce){
+    #scrollBar{ display:none; }
+  }
+
+  /* ============ FEATURE WHEEL (JS adds .wheel-on; without JS it stays a plain grid) ============ */
+  #features.wheel-on{
+    min-height:100vh; padding:110px 0 40px;
+    display:flex; flex-direction:column; justify-content:center;
+    overflow:hidden;
+  }
+  #features.wheel-on{ max-width:none; width:100%; }
+  #features.wheel-on .section-head{ margin-left:max(32px, calc((100vw - 1180px) / 2 + 32px)); margin-right:32px; }
+  #features.wheel-on .section-head{ margin-bottom:30px; }
+  #features.wheel-on .section-head h2{ font-size:34px; }
+  .wheel-on .grid-features{
+    display:block; position:relative;
+    background:none; border:none; box-shadow:none; border-radius:0; overflow:visible;
+    perspective:1400px; transform-style:preserve-3d;
+  }
+  .wheel-on .feature{
+    position:absolute; left:50%; top:0;
+    width:min(340px, 76vw);
+    border:1px solid var(--line); border-radius:22px;
+    box-shadow:0 18px 44px rgba(18,45,90,0.10);
+    transition: box-shadow .35s ease, border-color .35s ease;
+  }
+  .wheel-on .feature.is-active{
+    border-color: rgba(47,111,228,0.45);
+    box-shadow:0 26px 60px rgba(47,111,228,0.22);
+  }
+  .wheel-meta{ display:none; align-items:center; gap:18px; justify-content:center; margin-top:34px; }
+  .wheel-on .wheel-meta{ display:flex; }
+  .wheel-count{ font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.14em; color:var(--gold); min-width:64px; text-align:right; }
+  .wheel-progress{ width:min(260px,44vw); height:3px; border-radius:3px; background:rgba(18,45,90,0.10); overflow:hidden; }
+  .wheel-progress i{ display:block; height:100%; width:100%; background:var(--violet); transform-origin:0 50%; transform:scaleX(0); }
+  .wheel-hint{ font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; color:var(--muted); text-transform:uppercase; }
+
+  /* ============ 30 GB DIAL ============ */
+  .vault{ grid-template-columns: 1fr 380px; }
+  .dial{ width:100%; max-width:340px; height:auto; aspect-ratio:1/1; }
+  .dial svg{ transform:none; overflow:visible; }
+  .dial-glow{
+    position:absolute; inset:14%; border-radius:50%;
+    background: radial-gradient(circle, rgba(47,111,228,0.22), transparent 68%);
+    filter:blur(14px); animation: dial-breathe 4.5s ease-in-out infinite; pointer-events:none;
+  }
+  @keyframes dial-breathe{ 0%,100%{ opacity:.55; transform:scale(.96);} 50%{ opacity:1; transform:scale(1.06);} }
+  .dial-orbit{ transform-origin:150px 150px; animation: dial-spin 40s linear infinite; }
+  .dial-orbit-2{ transform-origin:150px 150px; animation: dial-spin 60s linear infinite reverse; }
+  @keyframes dial-spin{ to{ transform:rotate(360deg); } }
+  .dial-track{ stroke: rgba(18,45,90,0.09); stroke-width:14; }
+  .dial-fill{ stroke-width:14; transition:none; filter:url(#dialGlow); }
+  .dial .tick{ stroke:rgba(18,45,90,0.16); stroke-width:2; stroke-linecap:round; transition: stroke .25s ease; }
+  .dial .tick.major{ stroke-width:3; }
+  .dial .tick.on{ stroke:var(--violet); }
+  .dial-center .num{ font-family:var(--display); font-variation-settings:'SOFT' 100,'WONK' 1; font-size:66px; font-weight:700; line-height:1; letter-spacing:-0.04em;
+    background:linear-gradient(135deg,#5C9BF0,var(--blue)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .dial-center .num span:last-child{ font-size:22px !important; margin-left:4px; letter-spacing:0; }
+  .dial-chips{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:26px; }
+  .dial-chips span{ font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:999px; background:var(--panel-2); border:1px solid var(--line); color:var(--blue); }
+
+  /* ============ VIDEO PLACEHOLDERS ============ */
+  .video-ph{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; cursor:pointer;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(90,160,255,0.35), transparent 55%),
+      radial-gradient(circle at 80% 90%, rgba(47,111,228,0.35), transparent 55%),
+      linear-gradient(135deg,#123063,#0B1B3A);
+  }
+  .video-ph::before{ content:""; position:absolute; inset:0; opacity:.35;
+    background-image: linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);
+    background-size:34px 34px; }
+  .video-play{ position:relative; width:74px; height:74px; border-radius:50%; background:rgba(255,255,255,.95); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 30px rgba(0,0,0,.35); transition:transform .3s ease; }
+  .video-play::after{ content:""; position:absolute; inset:-10px; border-radius:50%; border:2px solid rgba(255,255,255,.5); animation: play-ring 2.4s ease-out infinite; }
+  @keyframes play-ring{ from{ transform:scale(.85); opacity:.9;} to{ transform:scale(1.5); opacity:0;} }
+  .video-play svg{ width:28px; height:28px; fill:var(--violet); margin-left:4px; }
+  .video-tag{ position:relative; font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; color:rgba(255,255,255,.85); }
+
+  @media (max-width:900px){
+    .vault{ grid-template-columns:1fr; }
+    #features.wheel-on{ padding-top:96px; }
+    #features.wheel-on .section-head h2{ font-size:26px; }
+    .dial-center .num{ font-size:52px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .dial-orbit,.dial-orbit-2,.dial-glow,.video-play::after{ animation:none; }
+  }
+
+  /* ============ VIDEO PLAYER (lightweight: one <video>, loaded on demand) ============ */
+  #videos{ padding-block:100px; }
+  .vp{ width:100%; margin:0 auto; }
+  .vp-stage{ position:relative; aspect-ratio:16/9; border-radius:24px; overflow:hidden; background:#0F2447;
+    box-shadow:0 30px 70px rgba(10,25,60,.35); border:1px solid rgba(255,255,255,.35); }
+  .vp-stage video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#0F2447; display:block; }
+  .vp-cover{ position:absolute; inset:0; border:0; padding:0; cursor:pointer; background:#0F2447 center/cover no-repeat; display:flex; align-items:center; justify-content:center; }
+  .vp-cover::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(10,25,60,0) 55%,rgba(10,25,60,.55)); }
+  .vp-playbtn{ position:relative; z-index:1; width:84px; height:84px; border-radius:50%; background:rgba(255,255,255,.95);
+    display:flex; align-items:center; justify-content:center; box-shadow:0 12px 34px rgba(10,25,60,.35); transition:transform .25s ease; }
+  .vp-playbtn svg{ width:30px; height:30px; fill:var(--violet); margin-left:4px; }
+  .vp-cover:hover .vp-playbtn, .vp-cover:focus-visible .vp-playbtn{ transform:scale(1.08); }
+  .vp-label{ position:absolute; z-index:1; left:22px; bottom:18px; right:22px; text-align:left; color:#fff; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; }
+  .vp-stage.playing .vp-cover{ display:none; }
+  .vp-now{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:22px 4px 6px; color:#fff; text-shadow:var(--sky-shadow,0 2px 14px rgba(0,0,0,.35)); }
+  .vp-now h3{ font-size:clamp(20px,2.4vw,28px); }
+  .vp-now p{ margin:6px 0 0; font-size:14.5px; line-height:1.55; color:rgba(255,255,255,.92); max-width:44em; }
+  .vp-list{ list-style:none; margin:22px 0 0; padding:0; display:grid; grid-template-columns:repeat(6,1fr); gap:14px; }
+  .vp-item{ all:unset; box-sizing:border-box; display:block; width:100%; cursor:pointer; border-radius:16px; overflow:hidden; background:var(--panel);
+    border:1px solid var(--line); box-shadow:0 10px 28px rgba(18,45,90,.16); transition:translate .25s ease, box-shadow .25s ease; position:relative; }
+  .vp-item:hover{ translate:0 -4px; box-shadow:0 18px 40px rgba(47,111,228,.24); }
+  .vp-item:focus-visible{ outline:3px solid #fff; outline-offset:2px; box-shadow:0 0 0 6px rgba(47,111,228,.55); }
+  .vp-item[aria-current="true"]{ box-shadow:0 0 0 3px var(--violet), 0 14px 34px rgba(47,111,228,.3); }
+  .vp-thumb{ display:block; aspect-ratio:16/9; background:#0F2447 center/cover no-repeat; position:relative; }
+  .vp-thumb i{ position:absolute; right:6px; bottom:6px; font:600 10.5px 'JetBrains Mono',monospace; background:rgba(10,25,60,.78); color:#fff; padding:2px 6px; border-radius:6px; font-style:normal; }
+  .vp-meta{ display:block; padding:10px 12px 12px; font-size:12.5px; font-weight:600; line-height:1.3; color:var(--cream); }
+  @media (max-width:900px){
+    .vp-list{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:12px; padding-bottom:10px; -webkit-overflow-scrolling:touch; }
+    .vp-list li{ flex:0 0 170px; scroll-snap-align:start; }
+    .vp-playbtn{ width:68px; height:68px; }
+  }
+
+  /* ============ TYPEWRITER TEXT (scroll-triggered) ============ */
+  .tc{ opacity:0; }
+  .tc.on{ opacity:1; }
+  .tc.cur{ position:relative; }
+  .tc.cur::after{
+    content:""; position:absolute; left:100%; top:.14em; height:.95em; width:2px; margin-left:1px;
+    background:currentColor; animation: tc-blink .7s steps(1) infinite;
+  }
+  @keyframes tc-blink{ 50%{ opacity:0; } }
+
+  /* ---------- Nav ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    padding:20px 0;
+    transition: background 0.4s ease, border-color 0.4s ease, padding 0.4s ease;
+    border-bottom: 1px solid transparent;
+  }
+  header.scrolled{
+    background: rgba(245,248,252,0.82);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+    padding:14px 0;
+  }
+  nav.wrap{
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px;
+  }
+  .brand img{ width:38px; height:38px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .brand-name{
+    font-family:var(--display);
+    font-variation-settings:'SOFT' 100, 'WONK' 1;
+    font-size:19px; font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .nav-links{
+    display:flex; gap:34px;
+    font-size:14.5px;
+    color:var(--muted);
+  }
+  .nav-links a{ position:relative; transition: color 0.25s ease; }
+  .nav-links a:hover{ color:var(--cream); }
+  .nav-links a::after{
+    content:"";
+    position:absolute; left:0; bottom:-6px;
+    width:0; height:1px;
+    background:var(--gold);
+    transition: width 0.25s ease;
+  }
+  .nav-links a:hover::after{ width:100%; }
+
+  .nav-actions{ display:flex; align-items:center; gap:14px; }
+
+  /* ---------- Mobile nav ---------- */
+  .nav-burger{
+    display:none;
+    flex-direction:column;
+    justify-content:center;
+    gap:5px;
+    width:38px; height:38px;
+    padding:0;
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .nav-burger span{
+    display:block;
+    width:100%; height:2px;
+    background: var(--cream);
+    border-radius:2px;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  .nav-burger[aria-expanded="true"] span:nth-child(1){ transform: translateY(7px) rotate(45deg); }
+  .nav-burger[aria-expanded="true"] span:nth-child(2){ opacity:0; }
+  .nav-burger[aria-expanded="true"] span:nth-child(3){ transform: translateY(-7px) rotate(-45deg); }
+
+  .mobile-menu{
+    display:none;
+    flex-direction:column;
+    gap:2px;
+    max-height:0;
+    overflow:hidden;
+    background: rgba(245,248,252,0.98);
+    border-top:1px solid transparent;
+    transition: max-height 0.3s ease;
+  }
+  .mobile-menu.open{
+    max-height:360px;
+    border-top:1px solid var(--line);
+  }
+  .mobile-menu a{
+    padding:14px 20px;
+    font-size:15px;
+    color:var(--cream);
+    border-bottom:1px solid var(--line);
+  }
+  .mobile-menu-actions{
+    display:flex; gap:12px;
+    padding:16px 20px;
+  }
+  .mobile-menu-actions .btn{ flex:1; justify-content:center; }
+
+  .btn{
+    font-family:'Sora', sans-serif;
+    font-weight:700;
+    font-size:14.5px;
+    padding:10px 22px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+  .btn-ghost{
+    color:var(--cream);
+    border-color: rgba(18,45,90,0.25);
+    background:transparent;
+  }
+  .btn-ghost:hover{
+    border-color: rgba(18,45,90,0.5);
+    background: rgba(18,45,90,0.06);
+  }
+  .btn-gold{
+    background: linear-gradient(135deg, #5C9BF0, var(--violet));
+    color:#F5F9FF;
+    box-shadow: 0 0 0 rgba(47,111,228,0.0);
+    position:relative;
+    overflow:hidden;
+  }
+  .btn-gold::before{
+    content:"";
+    position:absolute;
+    top:0; left:-60%;
+    width:40%; height:100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.55), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.7s ease;
+  }
+  .btn-gold:hover::before{ left:130%; }
+  .btn-gold:hover{
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(47,111,228,0.35), 0 3px 10px rgba(18,45,90,0.18);
+  }
+  .btn svg{ width:16px; height:16px; }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    z-index:1;
+    padding: 110px 32px 130px;
+    text-align:center;
+    overflow-x: clip;   /* hero-rays extend past the viewport and caused sideways scroll */
+  }
+  .hero .eyebrow{ justify-content:center; margin-bottom:26px; }
+  .hero .eyebrow::before{ display:none; }
+
+  .mark-wrap{
+    position:relative;
+    width:168px; height:168px;
+    margin: 0 auto 38px;
+  }
+  .mark-ring{
+    position:absolute; inset:-18px;
+    border-radius:50%;
+    border: 1.5px dashed rgba(47,111,228,0.35);
+    animation: spin-ring 22s linear infinite;
+  }
+  @keyframes spin-ring{
+    from{ transform: rotate(0deg); }
+    to{ transform: rotate(360deg); }
+  }
+  .mark-glow{
+    position:absolute; inset:-40px;
+    background: radial-gradient(circle, rgba(47,111,228,0.30), transparent 70%);
+    filter: blur(6px);
+    animation: pulse-glow 4.5s ease-in-out infinite;
+  }
+  @keyframes pulse-glow{
+    0%,100%{ opacity:0.55; transform:scale(1); }
+    50%{ opacity:1; transform:scale(1.08); }
+  }
+  .mark-wrap img{
+    position:relative;
+    width:100%; height:100%;
+    border-radius:50%;
+    animation: float-mark 6s ease-in-out infinite;
+    transition: transform 0.3s ease;
+  }
+  @keyframes float-mark{
+    0%,100%{ transform: translateY(0px); }
+    50%{ transform: translateY(-10px); }
+  }
+
+  .hero h1{
+    font-size: clamp(36px, 5.2vw, 62px);
+    line-height:1.08;
+    max-width:820px;
+    margin: 0 auto 26px;
+    opacity:0;
+    animation: hero-in 0.9s ease 0.15s forwards;
+  }
+  @keyframes hero-in{
+    from{ opacity:0; transform: translateY(16px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .hero h1 em{
+    font-style:normal;
+    background: linear-gradient(100deg, var(--violet) 0%, var(--blue) 35%, var(--violet) 60%, var(--blue) 100%);
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 6s linear infinite;
+  }
+  @keyframes shimmer{
+    0%{ background-position: 0% center; }
+    100%{ background-position: -220% center; }
+  }
+  .hero p.sub{
+    max-width:560px;
+    margin:0 auto 44px;
+    color:var(--muted);
+    font-size:17.5px;
+    line-height:1.65;
+  }
+  .hero-actions{
+    display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+    margin-bottom:22px;
+  }
+  .hero-actions .btn{ font-size:15.5px; padding:14px 30px; }
+  .hero-foot{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--muted);
+    opacity:0.8;
+  }
+
+  /* ---------- Hero ambient background: drifting gold dust + light rays ----------
+     .hero already has position:relative + z-index:1, which creates a
+     stacking context — so z-index:-1 children below paint behind every
+     other (unpositioned, z-index:auto) child in that context, regardless
+     of DOM order. That means these can sit as the FIRST children in the
+     markup without any risk of covering the headline/buttons. */
+  .hero-embers{
+    position:absolute; inset:0;
+    z-index:-1;
+    pointer-events:none;
+  }
+  .hero-rays{
+    position:absolute; inset:-15% -15%;
+    z-index:-1;
+    pointer-events:none;
+    background: conic-gradient(from 0deg at 50% 25%,
+      transparent 0deg, rgba(47,111,228,0.10) 8deg, transparent 20deg,
+      transparent 150deg, rgba(90,160,255,0.09) 164deg, transparent 182deg,
+      transparent 340deg, rgba(27,76,156,0.07) 352deg, transparent 360deg);
+    animation: hero-rays-sweep 46s linear infinite;
+  }
+  @keyframes hero-rays-sweep{
+    from{ transform: rotate(0deg); }
+    to{ transform: rotate(360deg); }
+  }
+
+  /* ---------- Divider ornament ---------- */
+  .divider{
+    position:relative; z-index:1;
+    display:flex; align-items:center; gap:14px;
+    max-width:1180px; margin:0 auto; padding:0 32px;
+    opacity:0.7;
+  }
+  .divider::before, .divider::after{
+    content:""; flex:1; height:1px;
+    background: linear-gradient(90deg, transparent, var(--line) 30%, var(--line) 70%, transparent);
+  }
+  .divider svg{ width:15px; height:15px; stroke:var(--gold-dim); flex-shrink:0; transform:rotate(0deg); animation: diamond-spin 8s linear infinite; }
+  @keyframes diamond-spin{
+    0%,92%{ rotate:0deg; }
+    100%{ rotate:180deg; }
+  }
+
+  /* ---------- Section shared ---------- */
+  section{ position:relative; z-index:1; padding-block:100px; }
+  /* These sections are static content (no scroll-timed video/canvas work),
+     so the browser can skip rendering their contents entirely while
+     they're off-screen — a big win on a page this long. contain-intrinsic-size
+     gives it a size estimate to use before it's ever measured, to avoid
+     scrollbar jump. */
+
+  .section-head{ max-width:640px; margin-bottom:64px; }
+  .section-head h2{ font-size:38px; line-height:1.18; margin-top:20px; }
+  .section-head p{ color:var(--muted); font-size:16px; margin-top:16px; line-height:1.6; }
+
+  /* ---------- Features ---------- */
+  .grid-features{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:1px;
+    background: var(--line);
+    border:1px solid var(--line);
+    border-radius: var(--radius);
+    overflow:hidden;
+    box-shadow: 0 20px 60px rgba(18,45,90,0.06);
+  }
+  .feature{
+    background: var(--panel);
+    padding:38px 32px;
+    transition: background 0.3s ease, box-shadow 0.35s ease;
+  }
+  .feature:hover{ background: var(--panel-2); box-shadow: 0 18px 34px rgba(18,45,90,0.10); }
+  .f-icon{ transition: transform 0.4s cubic-bezier(.2,.8,.2,1); }
+  .feature:hover .f-icon{ transform: scale(1.08) rotate(-4deg); }
+  .f-icon{
+    width:44px; height:44px;
+    border-radius:12px;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(145deg, rgba(47,111,228,0.22), rgba(27,76,156,0.18));
+    border:1px solid rgba(47,111,228,0.3);
+    margin-bottom:22px;
+  }
+  .f-icon svg{ width:22px; height:22px; stroke:var(--gold); }
+  .feature h3{ font-size:18.5px; font-weight:600; margin-bottom:10px; }
+  .feature p{ font-size:14.5px; color:var(--muted); line-height:1.6; margin:0; }
+
+  /* ---------- Vault dial ---------- */
+  .vault{
+    background: var(--panel);
+    border:1px solid var(--line);
+    border-radius: 24px;
+    padding: 70px 60px;
+    display:grid;
+    grid-template-columns: 1fr 340px;
+    gap:60px;
+    align-items:center;
+    position:relative;
+    overflow:hidden;
+    box-shadow: 0 24px 70px rgba(18,45,90,0.08);
+  }
+  .vault::before{
+    content:"";
+    position:absolute; top:-100px; right:-100px;
+    width:340px; height:340px;
+    background: radial-gradient(circle, rgba(47,111,228,0.25), transparent 70%);
+    pointer-events:none;
+  }
+  /* Drifting nebula + twinkle stars behind the dial — same drift/twinkle
+     language as the global background, just scoped locally so it reads
+     as depth behind the dial rather than a flat gradient panel. */
+  .vault-nebula{
+    position:absolute; inset:0;
+    z-index:0;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .vault-nebula .vn-blob{
+    position:absolute;
+    border-radius:50%;
+    filter: blur(55px);
+    opacity:0.55;
+    animation: aurora-drift 30s ease-in-out infinite;
+  }
+  .vault-nebula .vn-blob:nth-child(1){
+    width:300px; height:300px; top:-90px; left:-70px;
+    background: radial-gradient(circle, rgba(47,111,228,0.20), transparent 70%);
+  }
+  .vault-nebula .vn-blob:nth-child(2){
+    width:260px; height:260px; bottom:-110px; right:10%;
+    background: radial-gradient(circle, rgba(70,140,240,0.16), transparent 70%);
+    animation-delay:-15s;
+  }
+  .vault-nebula .vn-star{
+    position:absolute; width:3px; height:3px; border-radius:50%;
+    background: radial-gradient(circle, rgba(47,111,228,0.55), transparent 70%);
+    animation: twinkle 5s ease-in-out infinite;
+  }
+  .vault h2{ font-size:36px; margin:18px 0 18px; }
+  .vault p{ color:var(--muted); font-size:15.5px; line-height:1.7; max-width:460px; }
+  .vault-list{ margin-top:28px; display:flex; flex-direction:column; gap:14px; }
+  .vault-list div{ display:flex; align-items:center; gap:12px; font-size:14.5px; color:var(--cream); }
+  .vault-list svg{ width:17px; height:17px; stroke:var(--gold); flex-shrink:0; }
+
+  .dial{
+    position:relative;
+    width:260px; height:260px;
+    margin:0 auto;
+  }
+  .dial svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .dial-track{ fill:none; stroke: rgba(18,45,90,0.10); stroke-width:10; }
+  .dial-fill{
+    fill:none;
+    stroke: url(#dialGradient);
+    stroke-width:10;
+    stroke-linecap:round;
+    stroke-dasharray: 704;
+    stroke-dashoffset: 704;
+    transition: stroke-dashoffset 1.6s cubic-bezier(.16,.8,.3,1);
+  }
+  .dial-center{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .dial-center .num{ font-family:'JetBrains Mono', monospace; font-size:40px; font-weight:600; color:var(--cream); }
+  .dial-center .label{ font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase; margin-top:6px; }
+
+  /* ---------- Treasure chest (plays once when scrolled into view) ----------
+     #ck-pin is a normal in-flow section (no scroll pinning/scrubbing).
+     An IntersectionObserver fires the whole reveal — video, glow, icon
+     burst, popups — once, the first time it's scrolled to. --void/--panel/
+     --violet/--cream/--treasure-* etc. reuse the tokens already defined
+     in :root above, so nothing here needs to redeclare them. */
+  #ck-scroll-drive{
+    position: relative;
+  }
+  #ck-pin{
+    position: relative;
+    min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse 70% 45% at 15% -8%, rgba(47,111,228,0.14), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 10%, rgba(27,76,156,0.12), transparent 60%),
+      var(--void);
+  }
+
+  /* ambient starfield dots, purely decorative */
+  .ck-stars{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+  .ck-stars span{
+    position:absolute; width:3px; height:3px; border-radius:50%;
+    background: radial-gradient(circle, rgba(47,111,228,0.55), transparent 70%);
+  }
+
+  .ck-copy{
+    position:absolute; top: clamp(28px, 6vh, 64px); left:0; right:0;
+    text-align:center; z-index:20; pointer-events:none; padding: 0 20px;
+  }
+  .ck-eyebrow{
+    font-size:11px; text-transform:uppercase; color:var(--violet);
+    display:inline-flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .ck-eyebrow::before, .ck-eyebrow::after{ content:""; width:20px; height:1px; background:var(--violet-dim); }
+  .ck-title{
+    font-size: clamp(26px, 4.4vw, 46px);
+    font-weight:600;
+    line-height:1.05;
+    color:var(--cream);
+  }
+  .ck-title em{ font-style: normal; color: var(--treasure-gold-dim); }
+  .ck-sub{
+    margin-top:10px; color:var(--muted); font-size: clamp(13px, 1.6vw, 15px);
+  }
+  .ck-display{ font-family:var(--display); font-variation-settings:'SOFT' 100, 'WONK' 1; }
+  .ck-mono{ font-family:'JetBrains Mono', monospace; letter-spacing:0.08em; }
+
+  /* Chest itself: a video clip of the chest opening, chroma-keyed onto a
+     canvas at runtime so the clip's white background disappears and only
+     the chest renders. The <video> element is never shown directly (it's
+     just the decode source); #ck-chest-canvas is what's visible. The
+     sequence plays once, triggered when the section scrolls into view
+     (see the IntersectionObserver below) — it no longer scrubs with
+     scroll position. */
+  .ck-chest-wrap{
+    position:relative;
+    width: clamp(260px, 42vw, 520px);
+    aspect-ratio: 16 / 9;
+    z-index:10;
+  }
+.ck-chest-canvas{
+    position:relative;
+    z-index:6;
+    width:100%;
+    height:100%;
+    display:block;
+  }
+
+  /* Cloud under the chest (SVG layers sized to the chest frame) */
+  .ck-cloud{
+    position:absolute; inset:0; width:100%; height:100%;
+    overflow:visible; pointer-events:none;
+  }
+  .ck-cloud-back{ z-index:4; animation: ck-cloud-drift-a 12s ease-in-out infinite; }
+  .ck-cloud-front{ z-index:7; animation: ck-cloud-drift-b 15s ease-in-out infinite; }
+  @keyframes ck-cloud-drift-a{
+    0%,100%{ transform:translate(0,0); } 50%{ transform:translate(6px,-2px); }
+  }
+  @keyframes ck-cloud-drift-b{
+    0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-8px,1px); }
+  }
+  @media (prefers-reduced-motion: reduce){ .ck-cloud{ animation:none; } }
+
+  .ck-chest-glow{
+    position:absolute; left:50%; top:38%;
+    width: 60%; aspect-ratio:1/1;
+    transform: translate(-50%,-50%) scale(0.6);
+    border-radius:50%;
+    background: radial-gradient(circle, rgba(90,160,255,0.65), rgba(47,111,228,0.30) 55%, transparent 75%);
+    filter: blur(18px);
+    opacity:0;
+    pointer-events:none;
+    z-index:5;
+  }
+
+  /* Ambient ground fog beneath the chest — always drifting gently, so
+     the floor never reads as flat/static even before the reveal fires. */
+  .ck-fog{
+    position:absolute; left:0; right:0; bottom:8%; height:140px;
+    z-index:4; pointer-events:none; overflow:hidden;
+  }
+  .ck-fog span{
+    position:absolute; bottom:-20px; width:55%; height:100%;
+    border-radius:50%;
+    background: radial-gradient(ellipse at center, rgba(47,111,228,0.14), transparent 70%);
+    filter: blur(28px);
+  }
+  .ck-fog span:nth-child(1){ left:-8%; animation: ck-fog-a 19s ease-in-out infinite; }
+  .ck-fog span:nth-child(2){ right:-8%; animation: ck-fog-b 23s ease-in-out infinite; animation-delay:-7s; }
+  @keyframes ck-fog-a{
+    0%,100%{ transform:translateX(0) scaleX(1); opacity:0.55; }
+    50%{ transform:translateX(50px) scaleX(1.1); opacity:0.85; }
+  }
+  @keyframes ck-fog-b{
+    0%,100%{ transform:translateX(0) scaleX(1); opacity:0.5; }
+    50%{ transform:translateX(-60px) scaleX(1.08); opacity:0.8; }
+  }
+
+  /* Shimmer that sweeps across the open chest interior in a loop, but
+     only once the whole reveal sequence (icons + all four popups) has
+     actually finished — JS adds .active at that point. Sits above the
+     canvas but below the icon layer, so it overlays the chest itself
+     without dimming the icons floating above it. */
+  .ck-chest-shimmer{
+    position:absolute; inset:0;
+    z-index:7;
+    pointer-events:none;
+    background: linear-gradient(115deg, transparent 40%, rgba(190,220,255,0.40) 50%, transparent 60%);
+    background-size: 250% 250%;
+    opacity:0;
+  }
+  .ck-chest-shimmer.active{
+    opacity:1;
+    animation: ck-shimmer-sweep 5.5s ease-in-out infinite;
+  }
+  @keyframes ck-shimmer-sweep{
+    0%{ background-position: 130% 130%; }
+    50%{ background-position: -30% -30%; }
+    100%{ background-position: 130% 130%; }
+  }
+
+  /* Icon-burst layer: lives INSIDE .ck-chest-wrap now (not the whole
+     page), so its coordinates are relative to the chest video's own
+     frame. Each icon is injected by JS as an absolutely-positioned div
+     anchored to the chest's opening point (as it appears in the footage),
+     then flown out to a scattered resting spot once the sequence starts.
+     z-index sits above the canvas so icons read as coming out of the
+     opening rather than from behind the chest. */
+  .ck-icon-layer{
+    position:absolute; inset:0;
+    pointer-events:none;
+    z-index: 8;
+  }
+  .ck-icon{
+    position:absolute; left:54%; top:30%;
+    width: 34px; height:34px;
+    margin:-17px 0 0 -17px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:10px;
+    opacity:0;
+    background: var(--panel);
+    box-shadow: 0 8px 22px rgba(20,40,80,0.16), 0 0 0 1px var(--line);
+  }
+  .ck-icon svg{ width:20px; height:20px; }
+
+  /* Popup modals (the four revealed images). Two-layer structure per
+     popup: .ck-popup (outer, animated by scroll entrance) and
+     .ck-popup-swipe (inner, animated by pointer swipe-to-dismiss) — kept
+     separate so the scroll-driven and drag-driven transforms never fight
+     over the same element. */
+  .ck-popup-layer{
+    position:absolute; inset:0;
+    z-index: 30;
+    pointer-events:none; /* toggled to 'auto' by JS once popups are visible */
+  }
+  .ck-popup{
+    position:absolute;
+    left:50%; top:50%;
+    width: clamp(150px, 21vw, 210px);
+    aspect-ratio: 4/5;
+    margin-left: calc(-1 * clamp(75px, 10.5vw, 105px));
+    margin-top:  calc(-1 * clamp(94px, 13vw, 131px));
+    opacity:0;
+    will-change: transform, opacity;
+  }
+  .ck-popup-swipe{
+    position:relative;
+    width:100%; height:100%;
+    border-radius: 14px;
+    overflow:hidden;
+    background: var(--panel);
+    box-shadow: 0 18px 40px rgba(15,35,70,0.28), 0 0 0 1px var(--line);
+    cursor: grab;
+    touch-action: none; /* we own the gesture for swipe-to-dismiss */
+    will-change: transform;
+  }
+  .ck-popup-swipe:active{ cursor:grabbing; }
+  .ck-popup-swipe img{
+    width:100%; height:100%; object-fit:cover;
+    display:block;
+    pointer-events:none; /* image never eats the pointer gesture */
+    -webkit-user-drag:none;
+  }
+  .ck-popup-close{
+    position:absolute; top:8px; right:8px;
+    width:26px; height:26px;
+    border-radius:50%;
+    background: rgba(18,35,63,0.62);
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1;
+    border:none;
+    cursor:pointer;
+    z-index:2;
+  }
+  .ck-popup-tag{
+    position:absolute; left:10px; bottom:10px;
+    color:#fff;
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    z-index:2;
+  }
+  .ck-popup-fade{
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, transparent 55%, rgba(10,20,40,0.55));
+    z-index:1;
+    pointer-events:none;
+  }
+  .ck-popup.ck-dismissed{ pointer-events:none; }
+
+  /* progress hint at the base of the stage */
+  .ck-hint{
+    position:absolute; bottom: clamp(18px, 4vh, 40px); left:0; right:0;
+    text-align:center; z-index:20; pointer-events:none;
+  }
+  .ck-hint-text{
+    font-size:11px; color:var(--muted); letter-spacing:0.1em; text-transform:uppercase;
+  }
+  .ck-hint-bar{
+    width:2px; height:34px; margin: 8px auto 0;
+    background: linear-gradient(180deg, var(--violet), transparent);
+    border-radius:2px;
+    animation: ck-hint-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes ck-hint-pulse{ 0%,100%{ opacity:0.3; } 50%{ opacity:1; } }
+
+  /* ---------- Founder ---------- */
+  .founder{
+    display:grid;
+    grid-template-columns: 280px 1fr;
+    gap:60px;
+    align-items:center;
+    background: rgba(255,255,255,0.80);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border:1px solid var(--line);
+    border-radius:28px;
+    padding:44px;
+    box-shadow:0 24px 70px rgba(18,45,90,0.08);
+  }
+  .founder-photo{
+    position:relative;
+    aspect-ratio: 2 / 3;
+    border-radius: 20px;
+    overflow:hidden;
+    border:1px solid var(--line);
+    box-shadow: 0 24px 60px rgba(18,45,90,0.10);
+    transition: transform 0.5s cubic-bezier(.2,.8,.2,1), box-shadow 0.5s ease;
+    will-change: transform;
+  }
+  .founder-photo:hover{
+    transform: perspective(700px) rotateY(-4deg) rotateX(2deg) scale(1.02);
+    box-shadow: 0 30px 70px rgba(18,45,90,0.18);
+  }
+  .founder-photo::after{
+    content:"";
+    position:absolute; inset:0;
+    background: linear-gradient(180deg, transparent 55%, rgba(70,50,20,0.28));
+  }
+  .founder-photo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .founder-text h2{ font-size:34px; margin:18px 0 20px; }
+  .founder-text p{ color:var(--muted); font-size:15.5px; line-height:1.75; margin-bottom:16px; max-width:560px; }
+  .founder-sign{
+    margin-top:26px;
+    font-family:var(--display);
+    font-style:normal; font-weight:600;
+    font-size:24px;
+    color:var(--gold);
+  }
+  .founder-role{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--muted);
+    letter-spacing:0.05em;
+    margin-top:4px;
+  }
+
+  /* ---------- CTA banner ---------- */
+  .cta-banner{
+    text-align:center;
+    background: linear-gradient(145deg, rgba(47,111,228,0.14), rgba(27,76,156,0.10)), rgba(255,255,255,0.84);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border:1px solid var(--line);
+    border-radius:24px;
+    padding:80px 40px;
+    position:relative;
+    overflow:hidden;
+    animation: cta-pulse 5s ease-in-out infinite;
+  }
+  @keyframes cta-pulse{
+    0%,100%{ box-shadow: 0 0 0 rgba(47,111,228,0.0); }
+    50%{ box-shadow: 0 0 60px rgba(47,111,228,0.16); }
+  }
+  /* Slow ambient gold sweep behind the CTA content — same mood as the
+     pulse above, just a moving light instead of a static gradient. */
+  .cta-banner::after{
+    content:"";
+    position:absolute; inset:0;
+    z-index:0;
+    background: linear-gradient(100deg, transparent 30%, rgba(47,111,228,0.16) 50%, transparent 70%);
+    background-size: 260% 260%;
+    animation: cta-sweep 9s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes cta-sweep{
+    0%{ background-position: 130% 50%; }
+    50%{ background-position: -30% 50%; }
+    100%{ background-position: 130% 50%; }
+  }
+  .cta-banner > *{ position:relative; z-index:1; }
+  .cta-banner h2{ font-size:38px; max-width:600px; margin:0 auto 18px; }
+  .cta-banner p{ color:var(--muted); margin-bottom:36px; }
+
+  /* ---------- Footer ---------- */
+  footer{
+    border-top:1px solid var(--line);
+    padding:50px 0 40px;
+    position:relative; z-index:1;
+    background: rgba(245,248,252,0.88);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  }
+  .foot-row{
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px;
+  }
+  .foot-links{ display:flex; gap:28px; font-size:14px; color:var(--muted); }
+  .foot-links a:hover{ color:var(--cream); }
+  .foot-copy{ font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--muted); margin-top:24px; opacity:0.85; line-height:1.6; }
+
+  @media (max-width: 860px){
+    .nav-links{ display:none; }
+    .nav-actions{ display:none; }
+    .nav-burger{ display:flex; }
+    .mobile-menu{ display:flex; }
+    .grid-features{ grid-template-columns:1fr; }
+    .vault{ grid-template-columns:1fr; padding:44px 26px; }
+    .founder{ grid-template-columns:1fr; gap:34px; padding:30px 22px; }
+    .founder-photo{ max-width:260px; margin:0 auto; }
+    section{ padding-block:70px; }
+    .wrap{ padding-inline:20px; }
+
+    /* Heavy decorative effects are the main source of jank on phones —
+       large blurred/animated layers force the GPU to repaint big areas
+       every frame. Shrink or drop them below the desktop breakpoint. */
+    .hero-rays{ display:none; }
+    .vault-nebula{ display:none; }
+    .founder-photo:hover{ transform:none; }
+    .cta-banner{ animation:none; }
+    .cta-banner::after{ display:none; }
+  }
+
+  @media (max-width: 480px){
+    .hero{ padding:80px 20px 90px; }
+    .mark-wrap{ width:130px; height:130px; }
+    .section-head h2{ font-size:28px; }
+    .vault h2{ font-size:28px; }
+    .cta-banner{ padding:56px 24px; }
+    .cta-banner h2{ font-size:28px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+    .hero-embers{ display:none; }
+  }
+
+  /* Paused while the tab is in the background (JS toggles this on the
+     <html> element) so decorative animations don't keep burning CPU/
+     battery on a tab nobody is looking at. */
+  html.tab-hidden .hero-embers,
+  html.tab-hidden .hero-rays,
+  html.tab-hidden .vault-nebula .vn-blob,
+  html.tab-hidden .vault-nebula .vn-star,
+  html.tab-hidden .cta-banner,
+  html.tab-hidden .cta-banner::after{
+    animation-play-state: paused !important;
+  }
+
+  /* =====================================================================
+     SKY THEME — text that sits straight on the sky is light with a soft
+     shadow (it works from morning blue to midnight); cards/panels keep
+     their own colours.
+     ===================================================================== */
+  body{ background:#2f6db8; }
+  :root{ --sky-shadow: 0 1px 2px rgba(10,30,70,.35), 0 2px 18px rgba(10,30,70,.42); }
+
+  /* nav */
+  header.scrolled{ background: rgba(8,22,50,.42); border-bottom-color: rgba(255,255,255,.16); }
+  .brand-name{ color:#fff; text-shadow: var(--sky-shadow); }
+  .nav-links{ color: rgba(255,255,255,.86); text-shadow: var(--sky-shadow); }
+  .nav-links a:hover{ color:#fff; }
+  .nav-links a::after{ background:#fff; }
+  header .btn-ghost, .hero .btn-ghost{ color:#fff; border-color: rgba(255,255,255,.55); }
+  header .btn-ghost:hover, .hero .btn-ghost:hover{ background: rgba(255,255,255,.14); border-color:#fff; }
+  header .btn-gold, .hero .btn-gold{ background: linear-gradient(135deg,#ffffff,#dcebff); color:#1B4C9C; box-shadow:0 8px 26px rgba(8,25,60,.30); }
+  header .btn-gold::before, .hero .btn-gold::before{ background: linear-gradient(120deg, transparent, rgba(47,111,228,.28), transparent); }
+  .nav-burger span{ background:#fff; }
+  .mobile-menu{ background: rgba(8,22,50,.94); }
+  .mobile-menu.open{ border-top-color: rgba(255,255,255,.16); }
+  .mobile-menu a{ color:#fff; border-bottom-color: rgba(255,255,255,.14); }
+  #scrollBar{ background: linear-gradient(90deg,#fff,#ffd98a); box-shadow:0 0 10px rgba(255,255,255,.6); }
+
+  /* hero */
+  .hero .eyebrow{ color:#fff; text-shadow: var(--sky-shadow); }
+  .hero h1{ color:#fff; text-shadow: var(--sky-shadow); }
+  .hero h1 em{ text-shadow:none; filter: drop-shadow(0 2px 14px rgba(10,30,70,.40));
+    background-image: linear-gradient(100deg,#ffffff 0%,#ffd98a 35%,#ffffff 60%,#ffd98a 100%); background-size:220% auto; }
+  .hero p.sub{ color: rgba(255,255,255,.92); text-shadow: var(--sky-shadow); }
+  .hero-foot{ color:#fff; opacity:.9; text-shadow: var(--sky-shadow); }
+  .hero-rays{ display:none; }
+  .mark-ring{ border-color: rgba(255,255,255,.6); }
+  .mark-glow{ background: radial-gradient(circle, rgba(255,255,255,.38), transparent 70%); }
+
+  /* headings that sit on the sky */
+  .section-head .eyebrow{ color:#fff; text-shadow: var(--sky-shadow); }
+  .section-head .eyebrow::before{ background: rgba(255,255,255,.65); }
+  .section-head h2{ color:#fff; text-shadow: var(--sky-shadow); }
+  .section-head p{ color: rgba(255,255,255,.92); text-shadow: var(--sky-shadow); }
+  .divider{ opacity:.9; }
+  .divider::before, .divider::after{ background: linear-gradient(90deg, transparent, rgba(255,255,255,.55) 30%, rgba(255,255,255,.55) 70%, transparent); }
+  .divider svg{ fill: rgba(255,255,255,.9); stroke:none; }
+
+  /* feature wheel chrome */
+  .wheel-count{ color:#fff; text-shadow: var(--sky-shadow); }
+  .wheel-progress{ background: rgba(255,255,255,.28); }
+  .wheel-progress i{ background:#fff; }
+  .wheel-hint{ color: rgba(255,255,255,.85); text-shadow: var(--sky-shadow); }
+
+  /* chest section sits straight on the sky too */
+  .ck-stars{ display:none; }
+  .ck-fog span{ background: radial-gradient(ellipse at center, rgba(255,255,255,.26), transparent 70%); }
+  .ck-eyebrow{ color:#fff; text-shadow: var(--sky-shadow); }
+  .ck-eyebrow::before, .ck-eyebrow::after{ background: rgba(255,255,255,.65); }
+  .ck-title{ color:#fff; text-shadow: var(--sky-shadow); }
+  .ck-title em{ color:#ffd98a; }
+  .ck-sub{ color: rgba(255,255,255,.9); text-shadow: var(--sky-shadow); }
+  .ck-hint-text{ color: rgba(255,255,255,.85); text-shadow: var(--sky-shadow); }
+  .ck-hint-bar{ background: linear-gradient(180deg,#fff,transparent); }
+
+  /* footer */
+  footer{ background: rgba(8,22,50,.46); border-top-color: rgba(255,255,255,.16); }
+  footer .brand-name{ color:#fff; }
+  .foot-links{ color: rgba(255,255,255,.82); }
+  .foot-links a:hover{ color:#fff; }
+  .foot-copy{ color: rgba(255,255,255,.72); }
+
+  /* ---------- weather HUD ---------- */
+  #skyHud{
+    position:fixed; top:86px; left:20px; z-index:45; pointer-events:none;
+    display:flex; align-items:center; gap:12px;
+    padding:9px 16px 9px 12px; border-radius:16px; color:#fff;
+    background: rgba(8,22,50,.34); border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    box-shadow:0 10px 30px rgba(8,25,60,.22);
+  }
+  #skyHud .hud-ic{ width:28px; height:28px; flex:none; fill:none; stroke:#fff; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  #skyHud .hud-time{ font-family:'JetBrains Mono',monospace; font-size:13px; letter-spacing:.05em; line-height:1.2; }
+  #skyHud .hud-wx{ font-size:12px; opacity:.86; line-height:1.3; }
+  #skyHud .hud-temp{ font-family:var(--display); font-variation-settings:'SOFT' 100,'WONK' 1; font-size:27px; font-weight:600; line-height:1; padding-left:12px; margin-left:2px; border-left:1px solid rgba(255,255,255,.26); }
+  @media (max-width:860px){ #skyHud{ top:76px; left:10px; gap:9px; padding:7px 11px 7px 9px; border-radius:14px; } #skyHud .hud-ic{ width:22px; height:22px; } #skyHud .hud-time{ font-size:11.5px; } #skyHud .hud-wx{ font-size:10.5px; } #skyHud .hud-temp{ font-size:21px; padding-left:9px; } }
+
+  /* ---------- midnight stage + torch ---------- */
+  .night-stage{ min-height:100vh; padding:18vh 32px 0; }
+  .night-stage .section-head{ margin:0 auto; text-align:center; max-width:700px; }
+  .night-stage .eyebrow{ justify-content:center; }
+  .night-stage .eyebrow::before{ display:none; }
+  .ns-hint{ margin-top:34px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color: rgba(255,255,255,.75); text-shadow: var(--sky-shadow); }
+  #torchFx{ position:fixed; left:0; top:0; width:100%; height:100%; z-index:85; pointer-events:none; }
+  #nightCards{ position:fixed; inset:0; z-index:70; pointer-events:none; overflow:hidden; }
+  .nc-stack{ position:absolute; left:0; top:0; width:0; height:0; will-change:transform; transform:translate3d(-999px,-999px,0); }
+  .nc-card{
+    position:absolute; left:0; top:0; width:var(--w,120px); border-radius:12px; overflow:hidden; background:#0F2447; opacity:0;
+    box-shadow:0 0 0 1px rgba(255,255,255,.4), 0 0 34px rgba(255,236,190,.55), 0 16px 32px rgba(0,10,40,.5);
+    transform: translate(0,0) translate(-50%,-50%) rotate(0deg) scale(.2);
+    transition: transform .55s cubic-bezier(.4,0,.6,1), opacity .35s ease;
+  }
+  .nc-card.img{ aspect-ratio:4/3; }
+  .nc-card.video{ aspect-ratio:16/9; }
+  .nc-stack.on .nc-card{
+    opacity:1; transform: translate(var(--x),var(--y)) translate(-50%,-50%) rotate(var(--r)) scale(1);
+    transition: transform .8s cubic-bezier(.2,.9,.25,1.25) calc(var(--i) * 110ms), opacity .4s ease calc(var(--i) * 110ms);
+  }
+  .nc-card img{ width:100%; height:100%; object-fit:cover; display:block; -webkit-user-drag:none; }
+  .nc-fade{ position:absolute; inset:0; background: linear-gradient(180deg, transparent 55%, rgba(10,20,40,.55)); }
+  .nc-tag{ position:absolute; left:8px; bottom:7px; color:#fff; font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  .nc-card .video-ph{ cursor:default; gap:8px; }
+  .nc-card .video-play{ width:40px; height:40px; box-shadow:0 6px 18px rgba(0,0,0,.35); }
+  .nc-card .video-play::after{ inset:-6px; }
+  .nc-card .video-play svg{ width:16px; height:16px; margin-left:3px; }
+  .nc-card .video-tag{ font-size:8.5px; letter-spacing:.14em; }
+  @media (prefers-reduced-motion: reduce){ .nc-card, .nc-stack.on .nc-card{ transition: opacity .2s ease !important; } }
+
+  /* =====================================================================
+     ANIMATION LAYER — every element enters by animation, nothing just appears.
+     Uses the individual `translate` / `scale` / `rotate` properties so it never
+     fights the GSAP scroll scenes (which drive `transform`).
+     ===================================================================== */
+  @keyframes aurora-drift{ 0%,100%{ transform:translate(0,0) scale(1); } 33%{ transform:translate(30px,-20px) scale(1.12); } 66%{ transform:translate(-24px,18px) scale(.94); } }
+  @keyframes twinkle{ 0%,100%{ opacity:.25; transform:scale(.8); } 50%{ opacity:1; transform:scale(1.5); } }
+  @keyframes rv-in{
+    from{ opacity:0; translate:var(--tx,0px) var(--ty,36px); scale:var(--sc,.96); filter:blur(8px); }
+    to{ opacity:1; translate:0 0; scale:1; filter:blur(0); }
+  }
+  @keyframes rv-clip{
+    from{ opacity:0; clip-path:inset(0 0 100% 0 round 20px); scale:1.08; }
+    to{ opacity:1; clip-path:inset(0 0 0 0 round 20px); scale:1; }
+  }
+  @keyframes pop{ 0%{ scale:.4; rotate:-30deg; } 60%{ scale:1.18; rotate:8deg; } 100%{ scale:1; rotate:0deg; } }
+  @keyframes soft-bob{ 0%,100%{ translate:0 0; } 50%{ translate:0 -5px; } }
+  html.anim .rv:not(.in){ opacity:0; }
+  html.anim .rv.in{ animation: rv-in .95s cubic-bezier(.2,.8,.2,1) var(--d,0s) backwards; }
+  html.anim .rv-clip.in{ animation-name: rv-clip; animation-duration:1.2s; }
+  .rv-d{ --ty:-26px; }
+  .rv-l{ --tx:-48px; --ty:0px; }
+  .rv-r{ --tx:48px;  --ty:0px; }
+  .rv-z{ --sc:.4; --ty:0px; }
+
+  /* wheel cards: contents animate in each time a card takes the centre */
+  .wheel-on .feature.is-active .f-icon{ animation: pop .8s cubic-bezier(.2,1.3,.3,1) both; }
+  .wheel-on .feature.is-active h3{ animation: rv-in .7s cubic-bezier(.2,.8,.2,1) .08s backwards; --ty:16px; }
+  .wheel-on .feature.is-active p{ animation: rv-in .7s cubic-bezier(.2,.8,.2,1) .18s backwards; --ty:16px; }
+  /* mobile menu items cascade in when it opens */
+  .mobile-menu.open > *{ animation: rv-in .5s cubic-bezier(.2,.8,.2,1) backwards; --ty:-12px; }
+  .mobile-menu.open > :nth-child(2){ animation-delay:.06s; } .mobile-menu.open > :nth-child(3){ animation-delay:.12s; }
+  .mobile-menu.open > :nth-child(4){ animation-delay:.18s; } .mobile-menu.open > :nth-child(5){ animation-delay:.24s; }
+  /* idle + hover motion */
+  .ns-hint{ animation: soft-bob 2.6s ease-in-out infinite; }
+  .brand img{ transition: rotate .7s cubic-bezier(.2,.8,.2,1); } .brand:hover img{ rotate:360deg; }
+  .btn{ transition: transform .25s ease, box-shadow .25s ease, background .25s ease, border-color .25s ease, scale .15s ease; }
+  .btn:active{ scale:.96; }
+  .dial-chips span{ transition: translate .3s ease, background .3s ease; } .dial-chips span:hover{ translate:0 -3px; background:#fff; }
+  .vault-list svg{ transition: scale .3s ease; } .vault-list div:hover svg{ scale:1.25; }
+  .foot-links a{ display:inline-block; transition: translate .25s ease, color .25s ease; } .foot-links a:hover{ translate:0 -2px; }
+
+  /* Off-screen sections don't run their infinite animations (blurred aurora, rays, fog...) */
+  [data-offscreen], [data-offscreen] *, [data-offscreen] *::before, [data-offscreen] *::after{ animation-play-state: paused !important; }
+  @media (prefers-reduced-motion: reduce){ #videos .vp-item{ transition:none; } }
+
+  /* ---------- CSS fixes ---------- */
+  html{ scroll-padding-top:84px; }
+  #ck-pin{ padding-block:0; }
+  a:focus-visible, button:focus-visible{ outline:3px solid #fff; outline-offset:3px; border-radius:8px; box-shadow:0 0 0 6px rgba(47,111,228,.55); }
+  @media (max-width:480px){
+    .hero-actions .btn{ white-space:normal; text-align:center; justify-content:center; width:100%; }
+    #skyHud .hud-wx{ display:none; }
+  }
+  /* reduced motion: the hero used to stay invisible because its entrance animation was switched off */
+  @media (prefers-reduced-motion: reduce){
+    .hero h1, .hero .eyebrow, .hero p.sub, .hero-actions{ opacity:1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="sky" aria-hidden="true"><canvas></canvas></div>
+
+<div id="skyHud" aria-hidden="true">
+  <svg class="hud-ic" viewBox="0 0 24 24"></svg>
+  <div><div class="hud-time">09:00 AM</div><div class="hud-wx">Clear morning</div></div>
+  <div class="hud-temp">24°C</div>
+</div>
+
+<header id="siteHeader">
+  <nav class="wrap">
+    <div class="brand">
+      <img src="images/logo.png" alt="SpaceKhazana logo" width="38" height="38">
+      <span class="brand-name">SpaceKhazana</span>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#videos">Videos</a>
+    <a href="#vault">Free tier</a>
+      <a href="#founder">Founder</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-ghost" href="/app">Log in</a>
+      <a class="btn btn-gold" href="/app">
+        Sign up free
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+    </div>
+    <button class="nav-burger" id="navBurger" aria-label="Open menu" aria-expanded="false" aria-controls="mobileMenu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#features">Features</a>
+    <a href="#videos">Videos</a>
+    <a href="#vault">Free tier</a>
+    <a href="#founder">Founder</a>
+    <div class="mobile-menu-actions">
+      <a class="btn btn-ghost" href="/app">Log in</a>
+      <a class="btn btn-gold" href="/app">Sign up free</a>
+    </div>
+  </div>
+</header>
+
+<div id="scrollBar" aria-hidden="true"></div>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero wrap">
+    <canvas class="hero-embers" id="heroEmbers" aria-hidden="true"></canvas>
+    <div class="hero-rays" aria-hidden="true"></div>
+    <div class="eyebrow" style="opacity:0; animation: hero-in 0.7s ease 0s forwards;">SELF-HOSTED · PRIVATE · YOURS</div>
+    <div class="mark-wrap">
+      <div class="mark-ring"></div>
+      <div class="mark-glow"></div>
+      <img src="images/logo.png" alt="SpaceKhazana emblem" width="168" height="168">
+    </div>
+    <h1>A treasury for <em>everything</em><br>you keep.</h1>
+    <p class="sub" style="opacity:0; animation: hero-in 0.8s ease 0.35s forwards;">SpaceKhazana is a private cloud you actually own — files, photos, and music, streamed off a server built and run by one person, for people who'd rather trust themselves than a corporation.</p>
+    <div class="hero-actions" style="opacity:0; animation: hero-in 0.8s ease 0.5s forwards;">
+      <a class="btn btn-gold" href="/app">
+        Create your vault
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a class="btn btn-ghost" href="/app">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        I already have an account
+      </a>
+    </div>
+    <div class="hero-foot mono">30 GB FREE · NO CARD REQUIRED</div>
+  </section>
+
+  <!-- KHAZANA CHEST — plays once when scrolled into view (no scroll-pin).
+       Full-bleed (not wrapped in .wrap) so the stage fills the viewport.
+       #ck-pin sits closed until an IntersectionObserver fires the whole
+       reveal the first time it enters the viewport. -->
+  <div id="ck-scroll-drive">
+    <section id="ck-pin" aria-label="The Khazana — open the chest">
+
+      <!-- ambient stars -->
+      <div class="ck-stars" id="ck-stars"></div>
+
+      <!-- heading copy, fades out early in the scroll -->
+      <div class="ck-copy" id="ck-copy">
+        <div class="ck-eyebrow ck-mono">The Khazana</div>
+        <h2 class="ck-title ck-display">Open the <em>chest</em></h2>
+        <p class="ck-sub">Scroll to watch what's inside come loose</p>
+      </div>
+
+      <!-- ============================ CHEST ============================
+           A video clip of the chest opening, chroma-keyed onto a canvas
+           at runtime so its white background disappears. The <video> is
+           hidden and only ever used as a frame source; #ck-chest-canvas
+           is what actually renders. It sits closed (frame 0) until this
+           section scrolls into view, then plays once — see the
+           IntersectionObserver + ckStartSequence() in the script below.
+           The icon-burst layer lives INSIDE this wrap (not the whole
+           page) so icons visibly erupt from the chest's opening. -->
+      <!-- ambient ground fog, always drifting, independent of the reveal sequence -->
+      <div class="ck-fog" aria-hidden="true"><span></span><span></span></div>
+
+      <div class="ck-chest-wrap" id="ck-chest-wrap">
+        <div class="ck-chest-glow" id="ck-chest-glow"></div>
+
+        <!-- Cloud the chest sits on. Two SVG layers share the chest frame's own 640x360
+             coordinate space so they line up exactly: BACK is behind the chest (plus its
+             soft shadow), FRONT laps over the chest's base so it looks sunk into the cloud. -->
+        <svg class="ck-cloud ck-cloud-back" viewBox="0 0 640 360" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <radialGradient id="ckPuff" cx="42%" cy="34%" r="70%">
+              <stop offset="0" stop-color="#ffffff"/>
+              <stop offset=".55" stop-color="#f4f9ff"/>
+              <stop offset="1" stop-color="#cfe2f6"/>
+            </radialGradient>
+            <filter id="ckSoft" x="-20%" y="-40%" width="140%" height="180%"><feGaussianBlur stdDeviation="2.4"/></filter>
+            <filter id="ckShadowBlur" x="-30%" y="-100%" width="160%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>
+          </defs>
+          <g filter="url(#ckSoft)" fill="url(#ckPuff)">
+            <circle cx="108" cy="300" r="30"/><circle cx="156" cy="286" r="40"/>
+            <circle cx="216" cy="272" r="48"/><circle cx="290" cy="262" r="54"/>
+            <circle cx="366" cy="268" r="50"/><circle cx="432" cy="282" r="42"/>
+            <circle cx="486" cy="298" r="34"/><circle cx="540" cy="308" r="24"/>
+            <ellipse cx="300" cy="306" rx="215" ry="34"/>
+          </g>
+          <ellipse cx="292" cy="280" rx="98" ry="13" fill="#3a5f92" opacity=".30" filter="url(#ckShadowBlur)"/>
+        </svg>
+<canvas id="ck-chest-canvas" class="ck-chest-canvas" width="640" height="360"></canvas>
+
+        <svg class="ck-cloud ck-cloud-front" viewBox="0 0 640 360" preserveAspectRatio="none" aria-hidden="true">
+          <g filter="url(#ckSoft)" fill="url(#ckPuff)">
+            <circle cx="176" cy="308" r="30"/><circle cx="232" cy="300" r="34"/>
+            <circle cx="296" cy="304" r="38"/><circle cx="360" cy="300" r="34"/>
+            <circle cx="418" cy="306" r="30"/>
+            <ellipse cx="298" cy="322" rx="170" ry="24"/>
+          </g>
+        </svg>
+
+
+        <!-- loops once the reveal sequence has fully finished (see ckLastPopupSettledAt) -->
+        <div class="ck-chest-shimmer" id="ck-chest-shimmer"></div>
+
+        <!-- ==================== ICON BURST (injected by JS) ==================== -->
+        <div class="ck-icon-layer" id="ck-icon-layer"></div>
+      </div>
+
+      <!-- ==================== POPUP MODALS (4 images) ==================== -->
+      <div class="ck-popup-layer" id="ck-popup-layer">
+
+        <!-- Popup 1 -->
+        <div class="ck-popup" id="ck-popup-1" data-index="0">
+          <div class="ck-popup-swipe">
+            <img src="images/chest-1.jpg" alt="Memory 1" draggable="false" loading="lazy" decoding="async">
+            <div class="ck-popup-fade"></div>
+            <span class="ck-popup-tag ck-mono">img_0114</span>
+            <button class="ck-popup-close" aria-label="Close" data-close="0">&times;</button>
+          </div>
+        </div>
+
+        <!-- Popup 2 -->
+        <div class="ck-popup" id="ck-popup-2" data-index="1">
+          <div class="ck-popup-swipe">
+            <img src="images/chest-2.jpg" alt="Memory 2" draggable="false" loading="lazy" decoding="async">
+            <div class="ck-popup-fade"></div>
+            <span class="ck-popup-tag ck-mono">img_0219</span>
+            <button class="ck-popup-close" aria-label="Close" data-close="1">&times;</button>
+          </div>
+        </div>
+
+        <!-- Popup 3 -->
+        <div class="ck-popup" id="ck-popup-3" data-index="2">
+          <div class="ck-popup-swipe">
+            <img src="images/chest-3.jpg" alt="Memory 3" draggable="false" loading="lazy" decoding="async">
+            <div class="ck-popup-fade"></div>
+            <span class="ck-popup-tag ck-mono">img_0342</span>
+            <button class="ck-popup-close" aria-label="Close" data-close="2">&times;</button>
+          </div>
+        </div>
+
+        <!-- Popup 4 -->
+        <div class="ck-popup" id="ck-popup-4" data-index="3">
+          <div class="ck-popup-swipe">
+            <img src="images/chest-4.jpg" alt="Memory 4" draggable="false" loading="lazy" decoding="async">
+            <div class="ck-popup-fade"></div>
+            <span class="ck-popup-tag ck-mono">img_0417</span>
+            <button class="ck-popup-close" aria-label="Close" data-close="3">&times;</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- scroll hint -->
+      <div class="ck-hint" id="ck-hint">
+        <div class="ck-hint-text ck-mono">Scroll</div>
+        <div class="ck-hint-bar"></div>
+      </div>
+
+    </section>
+  </div>
+
+  <div class="divider">
+    <svg viewBox="0 0 24 24" fill="var(--gold-dim)"><path d="M12 2 L18 12 L12 22 L6 12 Z"/></svg>
+  </div>
+
+  <!-- FEATURES -->
+  <section id="features" class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">WHAT'S INSIDE</div>
+      <h2>Every corner of the vault has a job.</h2>
+      <p>Nothing here is decoration — each part of SpaceKhazana was built to solve something a normal cloud drive gets wrong.</p>
+    </div>
+
+    <div class="grid-features">
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+        </div>
+        <h3>Files, organized like they matter</h3>
+        <p>Breadcrumb navigation, bulk selection, thumbnail previews, and chunked uploads up to 30 GB a file.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <h3>Music that follows you</h3>
+        <p>Upload albums, register YouTube tracks, and cache everything offline the moment it lands in your library.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <h3>Browse &amp; discover</h3>
+        <p>Publish tracks to a shared Browse tab when you want them found — everything else stays private by default.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+        </div>
+        <h3>Built like a vault</h3>
+        <p>Token-based auth and isolated storage per person — nothing is shared unless you choose to share it.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+        </div>
+        <h3>Works everywhere</h3>
+        <p>Installs as an app on iOS and Android and keeps working with spotty or no connection at all.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        </div>
+        <h3>Command from anywhere</h3>
+        <p>A dedicated admin panel gives full oversight of the platform — no guesswork, no digging through logs.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h3>Never get caught off guard</h3>
+        <p>A built-in notification bell watches your storage in the background and warns you before you hit your limit — no surprise "quota full" errors mid-upload.</p>
+      </div>
+
+      <div class="feature">
+        <div class="f-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <h3>A vault inside the vault</h3>
+        <p>A dedicated password manager sits alongside your files, so the credentials for the rest of your life stay in the same private space you already trust.</p>
+      </div>
+
+    </div>
+
+    <div class="wheel-meta" aria-hidden="true">
+      <span class="wheel-count" id="wheelCount">01 / 08</span>
+      <div class="wheel-progress"><i id="wheelBar"></i></div>
+      <span class="wheel-hint">Scroll</span>
+    </div>
+  </section>
+
+  <!-- VIDEOS — one lightweight player; clips load only when played -->
+  <section id="videos" class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">SEE IT IN ACTION</div>
+      <h2>A quick look inside the vault.</h2>
+      <p>Start with the full tour, or jump straight to the part you care about.</p>
+    </div>
+    <div class="vp" id="vp">
+      <div class="vp-stage" id="vpStage">
+        <video id="vpVideo" preload="none" playsinline controls controlslist="nodownload" poster="videos/tour.jpg" aria-label="SpaceKhazana video player"></video>
+        <button class="vp-cover" id="vpCover" type="button" aria-label="Play video" style="background-image:url(videos/tour.jpg)">
+          <span class="vp-playbtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8z"/></svg></span>
+          <span class="vp-label" id="vpLabel">Full product tour</span>
+        </button>
+      </div>
+      <div class="vp-now" aria-live="polite"><div><h3 id="vpTitle">Full product tour</h3><p id="vpDesc">The whole treasury in about a minute and a half: files, search, music, the vault and sharing.</p></div></div>
+      <ul class="vp-list" id="vpList">
+        <li><button class="vp-item" type="button" data-src="videos/tour.mp4" data-poster="videos/tour.jpg" data-title="Full product tour" data-desc="The whole treasury in about a minute and a half: files, search, music, the vault and sharing." aria-current="true">
+          <span class="vp-thumb" style="background-image:url(videos/tour.jpg)"><i>1:18</i></span><span class="vp-meta">Full product tour</span></button></li>
+        <li><button class="vp-item" type="button" data-src="videos/upload.mp4" data-poster="videos/upload.jpg" data-title="Uploading &amp; organizing" data-desc="Drag in whole folders, search in milliseconds, and colour-code everything.">
+          <span class="vp-thumb" style="background-image:url(videos/upload.jpg)"><i>0:14</i></span><span class="vp-meta">Uploading &amp; organizing</span></button></li>
+        <li><button class="vp-item" type="button" data-src="videos/music.mp4" data-poster="videos/music.jpg" data-title="Music &amp; galleries" data-desc="Stream your videos, flip through galleries and play your music right in the browser.">
+          <span class="vp-thumb" style="background-image:url(videos/music.jpg)"><i>0:06</i></span><span class="vp-meta">Music &amp; galleries</span></button></li>
+        <li><button class="vp-item" type="button" data-src="videos/vault.mp4" data-poster="videos/vault.jpg" data-title="Locked down, by design" data-desc="An AES-256 password vault, passkeys, a device key and virus-scanned uploads.">
+          <span class="vp-thumb" style="background-image:url(videos/vault.jpg)"><i>0:08</i></span><span class="vp-meta">Locked down, by design</span></button></li>
+        <li><button class="vp-item" type="button" data-src="videos/droprooms.mp4" data-poster="videos/droprooms.jpg" data-title="Drop rooms" data-desc="Collect files from anyone with a single link, and revoke access any time.">
+          <span class="vp-thumb" style="background-image:url(videos/droprooms.jpg)"><i>0:07</i></span><span class="vp-meta">Drop rooms</span></button></li>
+        <li><button class="vp-item" type="button" data-src="videos/notes.mp4" data-poster="videos/notes.jpg" data-title="Notes, offline &amp; trash" data-desc="A built-in password manager, offline mode that installs like an app, and a 3-day trash safety net.">
+          <span class="vp-thumb" style="background-image:url(videos/notes.jpg)"><i>0:08</i></span><span class="vp-meta">Notes, offline &amp; trash</span></button></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- VAULT DIAL -->
+  <section id="vault" class="wrap">
+    <div class="vault reveal">
+      <div class="vault-nebula" aria-hidden="true">
+        <span class="vn-blob"></span>
+        <span class="vn-blob"></span>
+        <span class="vn-star" style="top:18%; left:32%; animation-delay:-1s;"></span>
+        <span class="vn-star" style="top:64%; left:8%; animation-delay:-3s;"></span>
+        <span class="vn-star" style="top:36%; left:60%; animation-delay:-2s;"></span>
+        <span class="vn-star" style="top:78%; left:48%; animation-delay:-4s;"></span>
+        <span class="vn-star" style="top:12%; left:74%; animation-delay:-0.5s;"></span>
+      </div>
+      <div>
+        <div class="eyebrow">THE FREE TIER</div>
+        <h2>30 GB, no card required.</h2>
+        <p>Every account starts with a full 30 GB of private storage, free, forever. Need more room for a growing music and photo library? Paid tiers scale up from there whenever you're ready.</p>
+        <div class="vault-list">
+          <div><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> No credit card to start</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Upgrade only when you need to</div>
+          <div><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Your storage, your rules</div>
+        </div>
+      </div>
+      <div>
+        <div class="dial" id="vaultDial">
+          <div class="dial-glow"></div>
+          <svg viewBox="0 0 300 300" aria-hidden="true">
+            <defs>
+              <linearGradient id="dialGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#6FA8F5"/>
+                <stop offset="100%" stop-color="#1B4C9C"/>
+              </linearGradient>
+              <filter id="dialGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="3.5" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+            </defs>
+            <circle class="dial-orbit" cx="150" cy="150" r="146" fill="none" stroke="rgba(47,111,228,0.28)" stroke-width="1.2" stroke-dasharray="3 9" stroke-linecap="round"/>
+            <g class="dial-orbit"><circle cx="150" cy="4" r="4.5" fill="#5C9BF0"/></g>
+            <g id="dialTicks"></g>
+            <circle class="dial-orbit-2" cx="150" cy="150" r="80" fill="none" stroke="rgba(47,111,228,0.22)" stroke-width="1.2" stroke-dasharray="2 7" stroke-linecap="round"/>
+            <circle class="dial-track" cx="150" cy="150" r="112" fill="none"/>
+            <circle class="dial-fill" id="dialFill" cx="150" cy="150" r="112" fill="none" stroke="url(#dialGradient)" stroke-linecap="round" transform="rotate(-90 150 150)" stroke-dasharray="704" stroke-dashoffset="704"/>
+            <g id="dialKnob" transform="rotate(0 150 150)"><circle cx="150" cy="38" r="9" fill="#fff" stroke="#2F6FE4" stroke-width="3.5"/></g>
+          </svg>
+          <div class="dial-center">
+            <div class="num"><span id="dialNumber">0</span><span style="font-size:20px;">GB</span></div>
+            <div class="label">Free, always</div>
+          </div>
+        </div>
+        <div class="dial-chips"><span>Files</span><span>Photos</span><span>Music</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider">
+    <svg viewBox="0 0 24 24" fill="var(--gold-dim)"><path d="M12 2 L18 12 L12 22 L6 12 Z"/></svg>
+  </div>
+
+  <!-- FOUNDER -->
+  <section id="founder" class="wrap">
+    <div class="founder reveal">
+      <div class="founder-photo" id="founderPhoto">
+        <img src="images/founder.jpg" alt="Sufyan, founder of SpaceKhazana" width="700" height="1050" loading="lazy" decoding="async">
+      </div>
+      <div class="founder-text">
+        <div class="eyebrow">BUILT BY ONE PERSON</div>
+        <h2>Sufyan built this from nothing — twice.</h2>
+        <p>SpaceKhazana is designed, coded, and run by its founder, Sufyan, from Islamabad. When the original server was lost, he rebuilt it from scratch by reverse-engineering his own interface, route by route, until every feature worked exactly as before — then kept going.</p>
+        <p>It now runs on his own infrastructure, tunneled straight from his machine to the world, with no team, no outsourcing, and no corner cut on the parts that matter: your files stay yours.</p>
+        <p>Every feature — the Music section's offline caching, the notification bell that watches your storage, the admin panel, the encrypted password vault — was built, broken, and rebuilt by hand until it felt right. SpaceKhazana isn't a product pitch; it's Sufyan's own daily-driver cloud, shared with anyone who wants the same thing.</p>
+        <div class="founder-sign">— Sufyan</div>
+        <div class="founder-role">Founder · Designer · Engineer, SpaceKhazana</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="wrap">
+    <div class="cta-banner reveal">
+      <div class="eyebrow" style="justify-content:center;">READY WHEN YOU ARE</div>
+      <h2>Your treasury is one signup away.</h2>
+      <p>Free forever up to 30 GB. Upgrade later if you ever need more.</p>
+      <div class="hero-actions">
+        <a class="btn btn-gold" href="/app">
+          Sign up free
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="/app">Log in</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- MIDNIGHT — last stop. The sky has turned to night; a torch comes up from the bottom of the screen. -->
+  <section id="nightstage" class="wrap night-stage">
+    <div class="section-head">
+      <div class="eyebrow">MIDNIGHT</div>
+      <h2>Shine a light on the clouds.</h2>
+      <p>Aim the torch at any cloud and hold it there. Whatever the sky has been keeping for you will unfold.</p>
+    </div>
+    <div class="ns-hint">Move your mouse to aim the torch</div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="brand">
+        <img src="images/logo.png" alt="SpaceKhazana logo" width="30" height="30" style="width:30px;height:30px;" loading="lazy" decoding="async">
+        <span class="brand-name" style="font-size:16px;">SpaceKhazana</span>
+      </div>
+      <div class="foot-links">
+        <a href="/app">Log in</a>
+        <a href="/app">Sign up</a>
+        <a href="#features">Features</a>
+        <a href="#founder">Founder</a>
+      </div>
+    </div>
+    <div class="foot-copy">© 2026 SPACEKHAZANA — A PRIVATE CLOUD, SELF-HOSTED, BUILT BY SUFYAN.</div>
+  </div>
+</footer>
+
+<div id="nightCards" aria-hidden="true"></div>
+<canvas id="torchFx" aria-hidden="true"></canvas>
+
+<script>
+/* ---------- SKY: scroll-driven time / weather / temperature, night torch + cloud cards ---------- */
+(() => {
+  const sky = document.getElementById('sky');
+  const canvas = sky.querySelector('canvas');
+  const ctx = canvas.getContext('2d');
+  let tA = 0;                                                            // torch amount 0..1 (ramps in at the end of the page)
+  const fx = document.getElementById('torchFx'), fctx = fx.getContext('2d');
+  const cardsRoot = document.getElementById('nightCards');
+  const litC = document.createElement('canvas'), litX = litC.getContext('2d');   // torch-lit copy of the clouds
+  const mkC = document.createElement('canvas'), mkX = mkC.getContext('2d');      // low-res soft beam mask
+  const DW = 1782, DH = 855;                           // reference image size
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rng = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const mix = (a, b, t) => a + (b - a) * t;
+
+  /* ---------- noise ---------- */
+  function makeNoise(seed) {
+    const r = rng(seed), T = new Float32Array(65536);
+    for (let i = 0; i < 65536; i++) T[i] = r();
+    return (x, y) => {
+      const xi = Math.floor(x), yi = Math.floor(y);
+      let xf = x - xi, yf = y - yi; xf *= xf * (3 - 2 * xf); yf *= yf * (3 - 2 * yf);
+      const x0 = xi & 255, y0 = (yi & 255) << 8, x1 = (xi + 1) & 255, y1 = ((yi + 1) & 255) << 8;
+      const a = T[y0 + x0], b = T[y0 + x1], c = T[y1 + x0], d = T[y1 + x1];
+      const top = a + (b - a) * xf;
+      return top + (c + (d - c) * xf - top) * yf;
+    };
+  }
+  const noise = makeNoise(42);
+  const fbm = (x, y, o) => { let s = 0, a = .5, n = 0; for (let i = 0; i < o; i++) { s += a * noise(x, y); n += a; a *= .5; x *= 2.03; y *= 2.03; } return s / n; };
+
+  /* ---------- volumetric-style cumulus: warped billow noise + light marched toward the sun ---------- */
+  function makeCloud(bw0, bh0, seed, haze = 0) {
+    const RS = bw0 > 250 ? 1.4 : 1.7, bw = bw0 * RS, bh = bh0 * RS;           // render at higher res for crisp detail
+    const w = Math.round(bw * 1.5), h = Math.round(bh * 2.2), r = rng(seed), n = Math.max(7, Math.round(bw / (22 * RS)));
+    const ox = r() * 200, oy = r() * 200, base = h / 2 + bh * .32, balls = [];
+    for (let i = 0; i < n; i++) {                                           // main body puffs on a flat base
+      const u = (i / (n - 1)) * 2 - 1 + (r() - .5) * .15;
+      const rad = bh * (.24 + .36 * Math.pow(1 - Math.abs(u), .7)) * (.6 + r() * .8);
+      balls.push({ x: w / 2 + u * bw * .45, y: base - rad * (.5 + r() * .35), r: rad });
+    }
+    for (let i = 0; i < n * .8; i++) {                                      // taller puffs
+      const rad = bh * (.18 + r() * .18);
+      balls.push({ x: w / 2 + (r() * 2 - 1) * bw * .32, y: base - bh * (.3 + r() * .38), r: rad });
+    }
+    const main = balls.length;
+    for (let i = 0; i < n * 1.6; i++) {                                     // cauliflower bumps around the top
+      const b = balls[(r() * main) | 0], a = -Math.PI * (.05 + r() * .9);
+      balls.push({ x: b.x + Math.cos(a) * b.r * .85, y: b.y + Math.sin(a) * b.r * .85, r: b.r * (.3 + r() * .25) });
+    }
+    const F = new Float32Array(w * h), Hh = new Float32Array(w * h);
+    for (const b of balls) {                                                // splat each ball into its bounding box only
+      const R = b.r * 1.38, r2 = b.r * b.r, R2 = r2 * 1.9;
+      const x0 = Math.max(0, (b.x - R) | 0), x1 = Math.min(w - 1, (b.x + R + 1) | 0), y0 = Math.max(0, (b.y - R) | 0), y1 = Math.min(h - 1, (b.y + R + 1) | 0);
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        const dx = x - b.x, dy = y - b.y, d2 = dx * dx + dy * dy, i = y * w + x;
+        if (d2 < r2) { const t = 1 - d2 / r2; F[i] += t * t * 1.6; }
+        if (d2 < R2) { const t = 1 - d2 / R2; Hh[i] += t * t; }
+      }
+    }
+    const S = new Float32Array(w * h), A = new Float32Array(w * h), N2 = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x; let f = F[i], halo = Hh[i];
+      if (halo === 0) continue;
+      const flat = ss(base + bh * .14, base - bh * .06, y); f *= flat; halo *= flat;
+      const prox = Math.min(1, halo * 2.5), X = (x + ox) / (bh * .3), Y = (y + oy) / (bh * .3);
+      const q = fbm(X * .7 + 9, Y * .7 + 3, 3);                              // domain warp -> puffy billows
+      const n1 = fbm(X + q * 1.6, Y + q * 1.6, 5);
+      const n2 = fbm((x + ox) / (9 * RS), (y + oy) / (bh * .14), 3);         // feathery tufts
+      const d = f + ((n1 - .5) * 1.1 + (n2 - .5) * .32) * prox * (1 - .5 * Math.min(f, 1));
+      S[i] = Math.min(1, Math.max(0, d) / 1.2); N2[i] = n2; A[i] = 1 - Math.exp(-4.5 * Math.max(0, d - .1));
+    }
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'), img = g.createImageData(w, h), px = img.data;
+    const lx = .6, ly = -.8, st0 = 2.2 * bh / 110;                          // sun is upper right
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x, a = A[i]; if (a < .01) continue;
+      let sum = 0, s = st0, prev = 0;
+      for (let j = 0; j < 8; j++) {                                          // march toward the sun, accumulate density
+        const sx = Math.round(x + lx * s), sy = Math.round(y + ly * s);
+        if (sx >= 0 && sy >= 0 && sx < w && sy < h) sum += S[sy * w + sx] * (s - prev);
+        prev = s; s *= 1.6;
+      }
+      const tau = 2.6 * sum / bh;
+      let T = (.62 * Math.exp(-tau) + .38 * Math.exp(-tau * .25)) * (.96 + .08 * N2[i]);   // Beer-Lambert + multiple scatter
+      T *= 1 - ss(base - bh * .4, base + bh * .02, y) * .3;                                 // greyer flat base
+      T = Math.min(1, Math.max(0, T)); T += (1 - a) * .5 * (1 - T);                          // bright silver-lined edges
+      let R = mix(150, 255, T), G = mix(172, 252, T), B = mix(212, 244, T);
+      R = mix(R, 165, haze); G = mix(G, 200, haze); B = mix(B, 238, haze);
+      const o = i * 4; px[o] = R; px[o + 1] = G; px[o + 2] = B; px[o + 3] = a * 255 * (1 - haze * .3);
+    }
+    g.putImageData(img, 0, 0);
+    c.bw = bw0; c.bh = bh0; c.rs = RS;
+    return c;
+  }
+
+  /* ---------- thin high cirrus streaks ---------- */
+  function makeCirrus(w, h, seed) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'), r = rng(seed);
+    for (let i = 0; i < 30; i++) {
+      const len = w * (.12 + r() * .28);
+      g.save(); g.translate(w * (.15 + r() * .7), h / 2 + (r() - .5) * h * .5);
+      g.scale(1, h * (.04 + r() * .07) / len);
+      const gr = g.createRadialGradient(0, 0, 0, 0, 0, len), a = .09 + r() * .12;
+      gr.addColorStop(0, `rgba(255,255,255,${a})`); gr.addColorStop(1, 'rgba(255,255,255,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(0, 0, len, 0, 7); g.fill(); g.restore();
+    }
+    return c;
+  }
+
+  /* ---------- scene layout (positions from the reference image, sizes smaller) ---------- */
+  const C = (img, x, y, speed, depth) => ({ img, fx: x / DW, fy: y / DH, speed, depth, hov: 0, cd: 0, ox: 0, oy: 0, vx: 0, vy: 0, sc: 1, ph: Math.random() * 6, px: 0, py: 0,
+                                             born: performance.now() / 1000, dx: 0, dy: 0, dw: 1, dh: 1, cx: 0, cy: 0, nc: null });
+  const layers = [];
+  const LAYER_SPECS = [
+    () => C(makeCirrus(900, 120, 11), 1400, 105, 3, .15),
+    () => C(makeCirrus(800, 110, 23), 470, 245, 4, .15),
+    () => C(makeCirrus(700, 70, 37), 720, 140, 4, .15),
+    () => C(makeCloud(900, 55, 71, .8), 500, 735, 2, .1),          // distant horizon banks
+    () => C(makeCloud(1000, 50, 73, .85), 1350, 790, 2.5, .1),
+    () => C(makeCloud(90, 34, 61, .6), 380, 330, 4, .3),
+    () => C(makeCloud(100, 38, 62, .55), 700, 690, 4.5, .3),
+    () => C(makeCloud(120, 46, 63, .5), 900, 125, 5, .4),
+    () => C(makeCloud(110, 42, 64, .5), 1400, 410, 5.5, .4),
+    () => C(makeCloud(190, 70, 5, .4), 205, 110, 6, .55),
+    () => C(makeCloud(170, 64, 9, .35), 1680, 215, 7, .55),
+    () => C(makeCloud(240, 86, 17, .25), 1450, 570, 8, .7),
+    () => C(makeCloud(280, 96, 3, .1), 1110, 300, 9, .8),
+    () => C(makeCloud(400, 130, 1, 0), 585, 510, 12, 1),
+  ];
+  let specI = 0, cardJ = 0;
+  function buildNextLayer() {
+    if (specI >= LAYER_SPECS.length) return;
+    const l = LAYER_SPECS[specI++]();
+    l.px = l.fx * W; l.py = l.fy * H;
+    if (l.depth >= .3) { l.nc = makeStack(l, cardJ++); layoutStack(l); }   // every real cumulus can hold cards
+    layers.push(l);
+    setTimeout(buildNextLayer, 30);
+  }
+
+  /* ---------- birds ---------- */
+  const rb = rng(99);
+  const birds = Array.from({ length: 7 }, (_, i) => ({
+    x: .08 + rb() * .3, y: .2 + rb() * .25, s: 6 + rb() * 6, v: 22 + rb() * 18,
+    ph: rb() * 6, fs: 5 + rb() * 3, ox: 0, oy: 0,
+  }));
+
+  let W = 0, H = 0, dpr = 1, k = 1, prog = 0, strike = null, nextStrike = 3;
+  const lc = document.createElement('canvas'), lctx = lc.getContext('2d');   // cloud layer (tinted by time of day)
+  const ptr = { x: -9999, y: -9999, nx: .5, ny: .5, on: false };
+  const items = [], rs = rng(5);
+  const stars = Array.from({ length: 170 }, () => ({ x: rs(), y: rs() * .75, r: .5 + rs() * 1.3, ph: rs() * 6 }));
+  const drops = Array.from({ length: 170 }, () => ({ x: rs(), y: rs(), l: 10 + rs() * 16, v: 700 + rs() * 500 }));
+
+  /* time-of-day keyframes by scroll progress:
+     [p, top rgb, bottom rgb, cloud tint rgba, sun, rain, stars, moon] */
+  const STOPS = [
+    [0,   47,109,184, 198,226,247, 255,255,255,0,   1, 0, 0,  0],
+    [.2,  62,108,176, 255,222,170, 255,200,140,.3,   1, 0, 0,  0],
+    [.4,  52,58,120,  255,128,84,  255,120,90,.55,   .9,0, 0,  0],
+    [.58, 48,56,78,   112,124,146, 74,82,98,.7,      0, 1, 0,  0],
+    [.66, 40,46,66,   80,90,116,   56,64,82,.74,     0, 1, .1, 0],
+    [.8,  12,18,44,   38,50,92,    20,28,56,.75,     0, 0, .7, .6],
+    [1,   3,5,15,     10,15,36,    8,12,28,.88,      0, 0, 1,  1],
+  ];
+  const state = p => {
+    let i = 0; while (i < STOPS.length - 2 && p > STOPS[i + 1][0]) i++;
+    const a = STOPS[i], b = STOPS[i + 1], u = (p - a[0]) / (b[0] - a[0]), t = mix(u, u * u * (3 - 2 * u), .5);
+    return a.slice(1).map((v, j) => mix(v, b[j + 1], t));
+  };
+  const rgb = (a, o = 0) => `rgb(${a[o] | 0},${a[o + 1] | 0},${a[o + 2] | 0})`;
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 1.25);   // soft clouds don't need retina density; saves ~60% fill cost
+    W = sky.clientWidth || innerWidth; H = sky.clientHeight || innerHeight;
+    if (!W || !H) return;
+    canvas.width = lc.width = W * dpr; canvas.height = lc.height = H * dpr;
+    sizeFx();
+    k = Math.max(W / DW, H / DH);
+    layers.forEach(l => { l.px = l.fx * W; l.py = l.fy * H; layoutStack(l); });
+    birds.forEach(b => { if (b.px === undefined) { b.px = b.x * W; b.py = b.y * H; } });
+  }
+  addEventListener('resize', resize);
+  if ('ResizeObserver' in window) new ResizeObserver(resize).observe(sky);
+  resize();
+
+  /* ---------- falling files ---------- */
+  const TYPES = [['PDF','#e5484d','doc'],['DOC','#3b82f6','doc'],['XLS','#22a55b','grid'],['PPT','#f97316','doc'],
+                 ['MP4','#8b5cf6','play'],['JPG','#10b981','img'],['ZIP','#f59e0b','zip'],['MP3','#ec4899','note']];
+  function emit(l, n = 1) {
+    const bw = l.img.bw * k, bh = l.img.bh * k;
+    for (let i = 0; i < n && items.length < 30; i++) items.push({
+      x: l.px + l.ox + (Math.random() - .5) * bw * .6, y: l.py + l.oy + bh * .3, vx: (Math.random() - .5) * 40, vy: 20,
+      rot: (Math.random() - .5) * .6, vr: (Math.random() - .5) * 1.6, ph: Math.random() * 6, t: 0,
+      s: (26 + Math.random() * 10) * Math.min(1.25, Math.max(.8, k)) * (.7 + .3 * l.depth), type: TYPES[(Math.random() * TYPES.length) | 0] });
+  }
+  function rr(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function drawItem(it) {
+    const s = it.s, w = s * .8, h = s, pop = Math.min(1, it.t / .25), [label, col, kind] = it.type, cy = -h * .16;
+    ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot); ctx.scale(pop, pop);
+    ctx.globalAlpha = Math.max(0, Math.min(1, (H + 60 - it.y) / 120));
+    ctx.shadowColor = 'rgba(0,20,60,.35)'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 3;
+    ctx.fillStyle = '#fff'; rr(-w / 2, -h / 2, w, h, s * .1); ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.save(); rr(-w / 2, -h / 2, w, h, s * .1); ctx.clip();
+    ctx.fillStyle = col; ctx.fillRect(-w / 2, h * .18, w, h * .32);
+    ctx.fillStyle = '#fff'; ctx.font = `700 ${s * .2}px system-ui,sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, h * .34);
+    ctx.fillStyle = '#dbe4f0'; ctx.beginPath(); ctx.moveTo(w / 2 - w * .28, -h / 2); ctx.lineTo(w / 2, -h / 2 + w * .28); ctx.lineTo(w / 2 - w * .28, -h / 2 + w * .28); ctx.fill();
+    if (kind === 'doc') { ctx.fillStyle = 'rgba(120,130,150,.55)'; for (let i = 0; i < 3; i++) ctx.fillRect(-w * .3, cy - h * .1 + i * h * .1, w * (i == 2 ? .35 : .6), h * .04); }
+    else if (kind === 'grid') { ctx.strokeStyle = col; ctx.lineWidth = 1; for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) ctx.strokeRect(-w * .3 + j * w * .3, cy - h * .14 + i * h * .1, w * .3, h * .1); }
+    else if (kind === 'play') { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, cy, h * .15, 0, 7); ctx.fill(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(-h * .05, cy - h * .07); ctx.lineTo(h * .08, cy); ctx.lineTo(-h * .05, cy + h * .07); ctx.fill(); }
+    else if (kind === 'img') { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-w * .32, cy + h * .14); ctx.lineTo(-w * .05, cy - h * .08); ctx.lineTo(w * .12, cy + h * .14); ctx.fill(); ctx.beginPath(); ctx.moveTo(0, cy + h * .14); ctx.lineTo(w * .16, cy); ctx.lineTo(w * .32, cy + h * .14); ctx.fill(); ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.arc(w * .2, cy - h * .1, h * .05, 0, 7); ctx.fill(); }
+    else if (kind === 'zip') { ctx.fillStyle = col; for (let i = 0; i < 5; i++) ctx.fillRect(i % 2 ? 0 : -w * .07, cy - h * .16 + i * h * .07, w * .07, h * .05); }
+    else { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(-w * .1, cy + h * .1, h * .06, 0, 7); ctx.fill(); ctx.fillRect(-w * .1 + h * .04, cy - h * .14, w * .04, h * .25); ctx.fillRect(-w * .1 + h * .04, cy - h * .14, w * .2, h * .05); }
+    ctx.restore(); ctx.restore();
+  }
+
+  addEventListener('pointermove', e => { ptr.x = e.clientX; ptr.y = e.clientY; ptr.nx = e.clientX / W; ptr.ny = e.clientY / H; ptr.on = true; });
+  addEventListener('pointerleave', () => ptr.on = false);
+  addEventListener('pointerup', e => { if (e.pointerType === 'touch') ptr.on = false; });
+  const over = (l, x, y, bob = 0) => {
+    const ex = (x - (l.px + l.ox)) / (l.img.bw / 2 * k), ey = (y - (l.py + l.oy + bob)) / (l.img.bh / 2 * k * .9);
+    return ex * ex + ey * ey < 1;
+  };
+  addEventListener('pointerdown', e => {                                   // click = gust of wind (+ files if on a cloud)
+    if (reduce) return;
+    for (const l of layers) {
+      const dx = l.px + l.ox - e.clientX, dy = l.py + l.oy - e.clientY, d = Math.hypot(dx, dy) || 1;
+      if (d < 650) { const f = 1 - d / 650; l.vx += dx / d * f * 520 * l.depth; l.vy += dy / d * f * 300 * l.depth; }
+      if (tA < .25 && l.depth >= .3 && over(l, e.clientX, e.clientY)) emit(l, 2);
+    }
+  });
+
+  /* ---------- sun, moon, rays ---------- */
+  function drawSun(t, sx, sy, a, warm) {
+    if (a < .01) return;
+    const R = Math.hypot(W, H), c1 = `255,${255 - warm * 60 | 0},${255 - warm * 130 | 0}`;
+    for (let i = 0; i < 12; i++) {
+      const an = Math.PI * (.52 + i * .045) + Math.sin(t * .12 + i) * .03, wd = .035 + .02 * Math.sin(t * .2 + i * 2);
+      const g = ctx.createLinearGradient(sx, sy, sx + Math.cos(an) * R * .8, sy + Math.sin(an) * R * .8);
+      g.addColorStop(0, `rgba(${c1},${.06 * a})`); g.addColorStop(1, `rgba(${c1},0)`);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + Math.cos(an - wd) * R, sy + Math.sin(an - wd) * R); ctx.lineTo(sx + Math.cos(an + wd) * R, sy + Math.sin(an + wd) * R); ctx.fill();
+    }
+    const g = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(W, H) * .34);
+    g.addColorStop(0, `rgba(255,255,245,${.95 * a})`); g.addColorStop(.06, `rgba(${c1},${.6 * a})`);
+    g.addColorStop(.3, `rgba(${c1},${.2 * a})`); g.addColorStop(1, `rgba(${c1},0)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  function drawMoon(mx, my, a) {
+    if (a < .01) return;
+    const r = Math.max(26, 34 * k), g = ctx.createRadialGradient(mx, my, r * .8, mx, my, r * 5);
+    g.addColorStop(0, `rgba(200,220,255,${.35 * a})`); g.addColorStop(1, 'rgba(200,220,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(mx - r * 5, my - r * 5, r * 10, r * 10);
+    ctx.globalAlpha = a; ctx.fillStyle = '#f3f1e6'; ctx.beginPath(); ctx.arc(mx, my, r, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(160,165,170,.35)';
+    [[-.3, -.2, .22], [.25, .1, .3], [-.05, .45, .16], [.35, -.4, .12]].forEach(([x, y, q]) => { ctx.beginPath(); ctx.arc(mx + x * r, my + y * r, q * r, 0, 7); ctx.fill(); });
+    ctx.globalAlpha = 1;
+  }
+  function drawBird(b, t) {
+    const s = b.s * k, f = Math.sin(t * b.fs + b.ph);
+    ctx.save(); ctx.translate(b.px + b.ox, b.py + b.oy + Math.sin(t * .8 + b.ph) * 4 * k);
+    ctx.lineWidth = Math.max(1, s * .16); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(30,50,80,.7)';
+    ctx.beginPath(); ctx.moveTo(-s, -s * .35 * f); ctx.quadraticCurveTo(-s * .5, -s * .5 * f - s * .15, 0, 0);
+    ctx.quadraticCurveTo(s * .5, -s * .5 * f - s * .15, s, -s * .35 * f); ctx.stroke(); ctx.restore();
+  }
+
+  /* ---------- lightning: jagged forked bolts + flicker ---------- */
+  const PULSES = [[0, 1], [.11, .65], [.22, .95], [.4, .35]];
+  function jag(x0, y0, x1, y1, d) {
+    let p = [[x0, y0], [x1, y1]];
+    for (let n = 0; n < 6; n++) {
+      const q = [p[0]];
+      for (let i = 1; i < p.length; i++) {
+        const a = p[i - 1], b = p[i], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, o = (Math.random() - .5) * d;
+        q.push([(a[0] + b[0]) / 2 - dy / L * o, (a[1] + b[1]) / 2 + dx / L * o], b);
+      }
+      p = q; d *= .55;
+    }
+    return p;
+  }
+  function genBolt() {
+    const x0 = W * (.15 + Math.random() * .7), x1 = x0 + (Math.random() - .5) * W * .25, y1 = H * (.55 + Math.random() * .3);
+    const main = jag(x0, -10, x1, y1, H * .16), parts = [{ p: main, w: 1 }];
+    main.forEach((pt, i) => {
+      if (i > 6 && i < main.length - 6 && Math.random() < .06) {
+        const dir = Math.random() < .5 ? -1 : 1, br = jag(pt[0], pt[1], pt[0] + dir * W * (.06 + Math.random() * .12), pt[1] + H * (.12 + Math.random() * .2), H * .07);
+        parts.push({ p: br, w: .5 });
+        if (Math.random() < .4) { const m = br[br.length >> 1]; parts.push({ p: jag(m[0], m[1], m[0] + dir * W * .05, m[1] + H * .1, H * .04), w: .3 }); }
+      }
+    });
+    return parts;
+  }
+
+  /* =====================================================================
+     NIGHT TORCH — appears when the page reaches the end (midnight).
+     The beam lights clouds it touches; a lit cloud unfolds image + video cards.
+     Swap the card content in NIGHT_CARDS below (src = your own image path;
+     if the file is missing, a generated illustration is shown instead).
+     ===================================================================== */
+  const NIGHT_CARDS = {
+    images: [
+      { src: 'images/chest-1.jpg', tag: 'img_0114' },
+      { src: 'images/chest-2.jpg', tag: 'img_0219' },
+      { src: 'images/chest-3.jpg', tag: 'img_0342' },
+      { src: 'images/chest-4.jpg', tag: 'img_0417' },
+    ],
+    videoTag: 'Video coming soon',
+  };
+  const ART = [
+    () => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#26346e'/><stop offset='.6' stop-color='#d9788a'/><stop offset='1' stop-color='#ffc27a'/></linearGradient></defs><rect width='400' height='300' fill='url(#a)'/><circle cx='290' cy='150' r='34' fill='#fff3c9' opacity='.92'/><path d='M0 215 L70 135 L120 185 L185 100 L255 195 L315 145 L400 218 L400 300 L0 300Z' fill='#3b3f7a'/><path d='M0 255 L60 205 L130 250 L205 195 L290 252 L360 215 L400 243 L400 300 L0 300Z' fill='#221e4b'/></svg>`,
+    () => { let w = ''; const r = rng(7); for (let x = 12; x < 400; x += 34) { const h = 70 + r() * 120, bw = 26 + r() * 6; w += `<rect x='${x}' y='${300 - h}' width='${bw}' height='${h}' fill='#141a3a'/>`; for (let y = 300 - h + 8; y < 292; y += 14) for (let q = 0; q < 2; q++) if (r() > .45) w += `<rect x='${x + 5 + q * 11}' y='${y}' width='6' height='7' fill='#ffd98a' opacity='.85'/>`; } return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='b' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#070b22'/><stop offset='1' stop-color='#33407e'/></linearGradient></defs><rect width='400' height='300' fill='url(#b)'/><circle cx='80' cy='70' r='24' fill='#f3f1e6'/>${w}</svg>`; },
+    () => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='c' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f6a56a'/><stop offset='1' stop-color='#ffe2ae'/></linearGradient></defs><rect width='400' height='300' fill='url(#c)'/><circle cx='120' cy='120' r='40' fill='#fff6d8'/><path d='M0 220 Q100 150 210 210 T400 190 L400 300 L0 300Z' fill='#d9853f'/><path d='M0 265 Q130 210 260 262 T400 240 L400 300 L0 300Z' fill='#a85a25'/></svg>`,
+    () => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' preserveAspectRatio='xMidYMid slice'><defs><linearGradient id='d' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#1d5f7a'/><stop offset='1' stop-color='#a8e0d0'/></linearGradient></defs><rect width='400' height='300' fill='url(#d)'/><path d='M0 200 Q110 140 220 195 T400 170 L400 300 L0 300Z' fill='#2f8f6b'/><path d='M0 250 Q140 200 270 248 T400 225 L400 300 L0 300Z' fill='#1b6249'/><path d='M60 250 l16 -46 l16 46z M100 256 l14 -38 l14 38z M300 246 l18 -52 l18 52z' fill='#0e3d2e'/></svg>`,
+  ];
+  const artURL = i => 'data:image/svg+xml;utf8,' + encodeURIComponent(ART[i % ART.length]());
+  const KIND_SETS = [['img', 'video', 'img'], ['img', 'img', 'video'], ['video', 'img', 'img']];
+  const OFFS3 = [{ x: -.8, y: .42, r: -7 }, { x: 0, y: .98, r: 1.5 }, { x: .8, y: .42, r: 7 }];
+  const OFFS2 = [{ x: -.62, y: .62, r: -5 }, { x: .64, y: .52, r: 5 }];
+  let imgCount = 0;
+  function sizeFx() {                                                        // called from resize()
+    fx.width = litC.width = Math.round(W * dpr); fx.height = litC.height = Math.round(H * dpr);
+    mkC.width = Math.ceil(W / 4); mkC.height = Math.ceil(H / 4);
+  }
+
+  function makeCard(kind) {
+    const el = document.createElement('div'); el.className = 'nc-card ' + kind;
+    if (kind === 'img') {
+      const d = NIGHT_CARDS.images[imgCount % NIGHT_CARDS.images.length], art = artURL(imgCount); imgCount++;
+      el.innerHTML = `<img alt="" draggable="false"><div class="nc-fade"></div><span class="nc-tag">${d.tag}</span>`;
+      const im = el.firstChild; im.dataset.src = d.src;
+      im.addEventListener('error', () => { if (im.src !== art) im.src = art; });
+    } else {
+      el.innerHTML = `<div class="video-ph"><span class="video-play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></span><span class="video-tag">${NIGHT_CARDS.videoTag}</span></div>`;
+    }
+    return el;
+  }
+  function makeStack(l, j) {
+    const big = l.img.bw >= 170, kinds = big ? KIND_SETS[j % KIND_SETS.length] : ['img', 'video'];
+    const el = document.createElement('div'); el.className = 'nc-stack';
+    const cards = kinds.map((kd, i) => { const c = makeCard(kd); c.style.setProperty('--i', i); el.appendChild(c); return c; });
+    cardsRoot.appendChild(el);
+    return { el, cards, offs: big ? OFFS3 : OFFS2, w: 120, on: false, lit: 0, dir: -1, hideT: 0 };
+  }
+  function layoutStack(l) {
+    if (!l.nc) return;
+    l.nc.w = Math.max(84, Math.min(168, l.img.bw * k * .62));
+    l.nc.el.style.setProperty('--w', l.nc.w + 'px');
+  }
+  function showStack(l) {
+    const n = l.nc; n.on = true; n.hideT = 0;
+    const room = l.cy - 76, need = n.w * 1.5;
+    n.dir = (room >= need || room >= H - l.cy) ? -1 : 1;
+    n.cards.forEach((c, i) => {
+      const o = n.offs[i];
+      c.style.setProperty('--x', (o.x * n.w).toFixed(1) + 'px');
+      c.style.setProperty('--y', (n.dir * o.y * n.w).toFixed(1) + 'px');
+      c.style.setProperty('--r', o.r + 'deg');
+      const im = c.firstChild; if (im && im.tagName === 'IMG' && !im.getAttribute('src')) im.src = im.dataset.src;   // load on first reveal
+    });
+    n.el.classList.add('on');
+  }
+  function hideStack(l) { const n = l.nc; n.on = false; n.hideT = 1.4; n.el.classList.remove('on'); }
+
+  /* ---------- torch: aims at the pointer (or sweeps by itself until you move it) ---------- */
+  const aim = { ax: 0, ay: 0, px: 0, py: 0, last: -1e9, init: false };
+  const setAim = e => { aim.px = e.clientX; aim.py = e.clientY; aim.last = performance.now(); };
+  addEventListener('pointermove', setAim); addEventListener('pointerdown', setAim);
+  const rm = rng(31);
+  const motes = Array.from({ length: 34 }, () => ({ s: rm(), v: .03 + rm() * .05, o: rm() * 2 - 1, r: .7 + rm() * 1.6, p: rm() * 6, b: .4 + rm() * .6 }));
+  let fxDirty = false;
+  { const hint = document.querySelector('.ns-hint'); if (hint && matchMedia('(hover: none)').matches) hint.textContent = 'Tap the sky to aim the torch'; }
+
+  function torchStep(t, dt) {
+    tA = ss(.86, .965, prog);
+    if (tA < .01) {                                                          // daytime: everything put away
+      for (const l of layers) if (l.nc && (l.nc.on || l.nc.hideT > 0)) { if (l.nc.on) hideStack(l); l.nc.lit = 0; l.nc.hideT = 0; l.nc.el.style.transform = 'translate3d(-999px,-999px,0)'; }
+      return null;
+    }
+    if (!aim.init) { aim.ax = W * .5; aim.ay = H * .4; aim.init = true; }
+    const active = t * 1000 - aim.last < 5000;
+    const gx = active ? aim.px : W * (.5 + .38 * Math.sin(t * .32));
+    const gy = active ? aim.py : H * (.4 + .24 * Math.sin(t * .47 + 1.3));
+    const f = 1 - Math.exp(-dt * 4.5); aim.ax += (gx - aim.ax) * f; aim.ay += (gy - aim.ay) * f;
+
+    const ts = Math.min(1.25, Math.max(.8, Math.min(W, H) / 700));
+    const px = W * .5, py = H + 26 * ts + (1 - tA) * 320 * ts, L = 176 * ts;
+    let a = Math.atan2(aim.ay - py, aim.ax - px); a = Math.min(-.3, Math.max(-Math.PI + .3, a));
+    const ox = px + Math.cos(a) * L, oy = py + Math.sin(a) * L;
+    const beam = { ox, oy, a, al: .19, lb: Math.hypot(W, H) * 1.15, px, py, ts, L };
+
+    // which clouds is the beam touching?
+    for (const l of layers) {
+      const n = l.nc; if (!n) continue;
+      let hit = false;
+      if (tA > .6) {
+        const dx = l.cx - ox, dy = l.cy - oy, dist = Math.hypot(dx, dy);
+        if (dist > 60 && dist < beam.lb && l.cx > 0 && l.cx < W && l.cy > H * .04 && l.cy < H * .97) {
+          let d = Math.atan2(dy, dx) - a; d = Math.atan2(Math.sin(d), Math.cos(d));
+          hit = Math.abs(d) < beam.al + (l.img.bw * k * .5) * .55 / dist;
+        }
+      }
+      n.lit = hit ? Math.min(1.2, n.lit + dt * 1.6) : Math.max(0, n.lit - dt * .7);
+      if (!n.on && n.lit > .5) showStack(l); else if (n.on && n.lit < .08) hideStack(l);
+      if (n.on || n.hideT > 0) {
+        n.hideT = Math.max(0, n.hideT - dt);
+        const sp = n.w * (n.cards.length === 3 ? 1.3 : .95), sx = W > sp * 2 ? Math.min(W - sp, Math.max(sp, l.cx)) : l.cx;
+        n.el.style.transform = `translate3d(${sx.toFixed(1)}px,${l.cy.toFixed(1)}px,0)`;
+      }
+    }
+    return beam;
+  }
+
+  // lit clouds: a warm, bright copy of the clouds, masked by a soft cone, drawn over the dark night clouds
+  function drawLitClouds(b) {
+    litX.setTransform(dpr, 0, 0, dpr, 0, 0); litX.globalCompositeOperation = 'source-over'; litX.clearRect(0, 0, W, H);
+    for (const l of layers) if (l.img.bw) { litX.globalAlpha = l.al; litX.drawImage(l.img, l.dx, l.dy, l.dw, l.dh); }
+    litX.globalAlpha = 1; litX.globalCompositeOperation = 'source-atop'; litX.fillStyle = 'rgba(255,228,176,.40)'; litX.fillRect(0, 0, W, H);
+    mkX.setTransform(1, 0, 0, 1, 0, 0); mkX.clearRect(0, 0, mkC.width, mkC.height);
+    mkX.setTransform(mkC.width / W, 0, 0, mkC.height / H, 0, 0);
+    for (const [m, al] of [[1.5, .30], [1.1, .32], [.75, .34], [.4, .36]]) {
+      const g = mkX.createRadialGradient(b.ox, b.oy, 0, b.ox, b.oy, b.lb);
+      g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(.6, 'rgba(0,0,0,.85)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+      mkX.globalAlpha = al; mkX.fillStyle = g; mkX.beginPath(); mkX.moveTo(b.ox, b.oy); mkX.arc(b.ox, b.oy, b.lb, b.a - b.al * m, b.a + b.al * m); mkX.closePath(); mkX.fill();
+    }
+    mkX.globalAlpha = 1;
+    litX.globalCompositeOperation = 'destination-in'; litX.drawImage(mkC, 0, 0, W, H); litX.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = tA; ctx.drawImage(litC, 0, 0, W, H); ctx.globalAlpha = 1;
+  }
+
+  // overlay (above the page content): beam, dust in the beam, the torch itself
+  function torchOverlay(b, t, dt) {
+    if (!b) { if (fxDirty) { fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, fx.width, fx.height); fxDirty = false; } return; }
+    fxDirty = true;
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0); fctx.clearRect(0, 0, W, H);
+    const A = tA, ts = b.ts, flick = .95 + .05 * Math.sin(t * 19) * Math.sin(t * 6.7);
+    fctx.save(); fctx.globalCompositeOperation = 'lighter';
+    for (const [m, al] of [[1.7, .026], [1.4, .03], [1.15, .034], [.9, .04], [.65, .05], [.4, .065], [.2, .08]]) {
+      const g = fctx.createRadialGradient(b.ox, b.oy, 0, b.ox, b.oy, b.lb);
+      g.addColorStop(0, `rgba(255,246,214,${al * 2 * A * flick})`); g.addColorStop(.3, `rgba(255,240,200,${al * A * flick})`); g.addColorStop(1, 'rgba(255,236,190,0)');
+      fctx.fillStyle = g; fctx.beginPath(); fctx.moveTo(b.ox, b.oy); fctx.arc(b.ox, b.oy, b.lb, b.a - b.al * m, b.a + b.al * m); fctx.closePath(); fctx.fill();
+    }
+    const nx = -Math.sin(b.a), ny = Math.cos(b.a), tn = Math.tan(b.al * .9);       // dust drifting inside the beam
+    for (const m of motes) {
+      const d = (m.s + t * m.v) % 1, dist = d * b.lb * .7, lat = m.o * dist * tn;
+      const x = b.ox + Math.cos(b.a) * dist + nx * lat, y = b.oy + Math.sin(b.a) * dist + ny * lat;
+      fctx.fillStyle = `rgba(255,250,225,${A * m.b * (1 - d) * (.55 + .45 * Math.sin(t * 3 + m.p))})`; fctx.beginPath(); fctx.arc(x, y, m.r * ts, 0, 7); fctx.fill();
+    }
+    fctx.restore();
+
+    fctx.save(); fctx.translate(b.px, b.py); fctx.rotate(b.a + Math.PI / 2);      // torch body (local -y = forward)
+    const L = b.L;
+    let g = fctx.createLinearGradient(-14 * ts, 0, 14 * ts, 0);
+    g.addColorStop(0, '#171d2e'); g.addColorStop(.35, '#5f6c88'); g.addColorStop(.62, '#39445e'); g.addColorStop(1, '#121827');
+    fctx.fillStyle = g; fctx.beginPath(); fctx.moveTo(-12 * ts, 0); fctx.lineTo(12 * ts, 0); fctx.lineTo(14 * ts, -L * .66); fctx.lineTo(-14 * ts, -L * .66); fctx.closePath(); fctx.fill();
+    fctx.strokeStyle = 'rgba(255,255,255,.16)'; fctx.lineWidth = 2 * ts;
+    for (let i = 1; i < 6; i++) { const y = -L * .07 * i - L * .05; fctx.beginPath(); fctx.moveTo(-13 * ts, y); fctx.lineTo(13 * ts, y); fctx.stroke(); }
+    fctx.fillStyle = '#e8b84b'; fctx.fillRect(-4 * ts, -L * .5, 8 * ts, 12 * ts);  // switch, in the site's treasure gold
+    g = fctx.createLinearGradient(-30 * ts, 0, 30 * ts, 0);
+    g.addColorStop(0, '#39435b'); g.addColorStop(.45, '#aab5cc'); g.addColorStop(1, '#2f384e');
+    fctx.fillStyle = g; fctx.beginPath(); fctx.moveTo(-14 * ts, -L * .66); fctx.lineTo(14 * ts, -L * .66); fctx.lineTo(30 * ts, -L); fctx.lineTo(-30 * ts, -L); fctx.closePath(); fctx.fill();
+    fctx.fillStyle = '#c9d3e8'; fctx.beginPath(); fctx.ellipse(0, -L, 31 * ts, 8 * ts, 0, 0, 7); fctx.fill();
+    g = fctx.createRadialGradient(0, -L, 0, 0, -L, 26 * ts); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#ffe7a8');
+    fctx.fillStyle = g; fctx.beginPath(); fctx.ellipse(0, -L, 25 * ts, 5.6 * ts, 0, 0, 7); fctx.fill();
+    fctx.restore();
+
+    fctx.save(); fctx.globalCompositeOperation = 'lighter';                      // lens bloom
+    const R = 130 * ts; g = fctx.createRadialGradient(b.ox, b.oy, 0, b.ox, b.oy, R);
+    g.addColorStop(0, `rgba(255,250,232,${.85 * A * flick})`); g.addColorStop(.25, `rgba(255,236,185,${.4 * A})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+    fctx.fillStyle = g; fctx.fillRect(b.ox - R, b.oy - R, R * 2, R * 2); fctx.restore();
+  }
+
+  /* ---------- weather HUD: time, conditions and temperature follow the scroll ---------- */
+  const hudEl = document.getElementById('skyHud'), hIc = hudEl.querySelector('.hud-ic'), hTime = hudEl.querySelector('.hud-time'), hWx = hudEl.querySelector('.hud-wx'), hTemp = hudEl.querySelector('.hud-temp');
+  const HUD_HOURS = [[0, 9], [.2, 16.5], [.4, 18.75], [.58, 20], [.8, 22], [1, 24]];
+  const HUD_TEMP = [[0, 24], [.2, 31], [.4, 26], [.58, 21], [.66, 19], [.8, 15], [1, 11]];
+  const tab = (T, p) => { let i = 0; while (i < T.length - 2 && p > T[i + 1][0]) i++; const [p0, v0] = T[i], [p1, v1] = T[i + 1]; return mix(v0, v1, Math.min(1, Math.max(0, (p - p0) / (p1 - p0)))); };
+  const ICONS = {
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    dusk: '<path d="M17 18a5 5 0 0 0-10 0"/><path d="M12 9V2M4.2 10.2l1.4 1.4M19.8 10.2l-1.4 1.4M1 18h2M21 18h2M2 22h20"/>',
+    storm: '<path d="M19 16.9A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/><path d="m13 11-4 6h6l-4 6"/>',
+    moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  };
+  let hudCat = '', hudT = '', hudW = '', hudC = '';
+  function updateHud(st, rain) {
+    const hrs = tab(HUD_HOURS, prog), hh = Math.floor(hrs) % 24, mm = Math.floor((hrs % 1) * 60);
+    const time = `${String(hh % 12 || 12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+    const temp = Math.round(tab(HUD_TEMP, prog)) + '°C';
+    let cat, wx;
+    if (prog < .14) { cat = 'sun'; wx = 'Clear morning'; }
+    else if (prog < .32) { cat = 'sun'; wx = 'Golden hour'; }
+    else if (rain > .35) { cat = 'storm'; wx = 'Thunderstorm'; }
+    else if (prog < .5) { cat = 'dusk'; wx = 'Sunset'; }
+    else if (prog < .9) { cat = 'moon'; wx = 'Nightfall'; }
+    else { cat = 'moon'; wx = 'Clear midnight'; }
+    if (cat !== hudCat) { hudCat = cat; hIc.innerHTML = ICONS[cat]; }
+    if (time !== hudT) { hudT = time; hTime.textContent = time; }
+    if (wx !== hudW) { hudW = wx; hWx.textContent = wx; }
+    if (temp !== hudC) { hudC = temp; hTemp.textContent = temp; }
+  }
+
+  let last = performance.now(), cost = 6, half = false, skipFlip = false;
+  function frame(now) {
+    if (!W || !H) { resize(); requestAnimationFrame(frame); return; }
+    if (half && (skipFlip = !skipFlip)) { requestAnimationFrame(frame); return; }   // slow device: render every other frame, steadily
+    const t0 = performance.now();
+    const dt = Math.min((now - last) / 1000, .05), t = now / 1000; last = now;
+
+    // scroll -> time of day + weather
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const diff = (max > 20 ? Math.min(1, Math.max(0, scrollY / max)) : 0) - prog, cap = .16 * dt;   // slow ease + speed limit
+    prog += Math.max(-cap, Math.min(cap, diff * (1 - Math.exp(-dt * 1.5))));
+    const st = state(prog), [sunA, rain, starA, moonA] = st.slice(10);
+    let I = 0;                                                              // current lightning brightness
+    if (rain > .5 && !reduce && (nextStrike -= dt) <= 0) {
+      const bolt = Math.random() < .7 ? genBolt() : null;                   // sometimes only distant sheet lightning
+      strike = { t: 0, bolt, amp: bolt ? 1 : .5 }; nextStrike = 2.5 + Math.random() * 6;
+    }
+    if (strike) {
+      strike.t += dt;
+      for (const [ti, a] of PULSES) if (strike.t > ti) I = Math.max(I, a * Math.exp(-(strike.t - ti) * 12));
+      I *= strike.amp; if (strike.t > 1.2) strike = null;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const bg = ctx.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, rgb(st, 0)); bg.addColorStop(1, rgb(st, 3));
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    if (starA > .01) for (const q of stars) {
+      ctx.fillStyle = `rgba(255,255,255,${starA * (.55 + .45 * Math.sin(t * 2 + q.ph))})`;
+      ctx.beginPath(); ctx.arc(q.x * W, q.y * H, q.r, 0, 7); ctx.fill();
+    }
+    const e = ss(0, .5, prog);
+    drawSun(t, W * (.72 - .12 * e), H * (.16 + .62 * e), sunA, ss(0, .4, prog));
+    drawMoon(W * .28, H * (.5 - .32 * ss(.6, 1, prog)), moonA);
+
+    lctx.setTransform(dpr, 0, 0, dpr, 0, 0); lctx.clearRect(0, 0, W, H);
+    for (const l of layers) {
+      const rs = l.img.rs || 1, hw = l.img.width / rs / 2 * k, hh = l.img.height / rs / 2 * k;
+      if (!reduce) l.px += l.speed * k * dt;                                // slow drift, left -> right
+      if (l.px - hw > W) l.px = -hw;
+      const bob = reduce ? 0 : Math.sin(t * .4 + l.ph) * 3 * l.depth * k;
+      let tx = 0, ty = 0, ts = 1;
+      if (!reduce) {
+        if (ptr.on) {
+          const dx = l.px - ptr.x, dy = l.py - ptr.y, d = Math.hypot(dx / (hw * .6), dy / (hh * .6)) || .001;
+          if (d < 1.7 && l.depth > .2) {
+            const f = Math.pow(1 - d / 1.7, 1.5), m = Math.hypot(dx, dy) || 1;
+            tx = dx / m * f * 60 * l.depth; ty = dy / m * f * 35 * l.depth; ts = 1 + f * .05;
+          }
+          tx += (.5 - ptr.nx) * 40 * l.depth; ty += (.5 - ptr.ny) * 20 * l.depth;
+          if (tA < .25 && l.depth >= .3 && over(l, ptr.x, ptr.y, bob)) {                // hovering a cloud drops files
+            l.hov += dt; l.cd -= dt;
+            if (l.hov > .2 && l.cd <= 0) { emit(l); l.cd = .5 + Math.random() * .6; l.sc += .05; }
+          } else l.hov = 0;
+        }
+        l.vx += ((tx - l.ox) * 5 - l.vx * 3) * dt; l.vy += ((ty - l.oy) * 5 - l.vy * 3) * dt;
+        l.ox += l.vx * dt; l.oy += l.vy * dt; l.sc += (ts - l.sc) * (1 - Math.exp(-dt * 3));
+      }
+      const w = l.img.width / rs * k * l.sc, h = l.img.height / rs * k * l.sc;
+      l.dx = l.px + l.ox - w / 2; l.dy = l.py + l.oy + bob - h / 2; l.dw = w; l.dh = h;
+      l.cx = l.px + l.ox; l.cy = l.py + l.oy + bob; l.al = Math.min(1, (t - l.born) / 1.6);
+      lctx.globalAlpha = l.al; lctx.drawImage(l.img, l.dx, l.dy, w, h); lctx.globalAlpha = 1;
+    }
+    lctx.globalCompositeOperation = 'source-atop';                          // tint clouds for sunset / storm / night
+    lctx.fillStyle = `rgba(${mix(st[6], 200, I) | 0},${mix(st[7], 215, I) | 0},${mix(st[8], 255, I) | 0},${st[9] * (1 - I * .7)})`; lctx.fillRect(0, 0, W, H);
+    lctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(lc, 0, 0, W, H);
+    const beam = torchStep(t, dt);                                          // null until the page reaches the end
+    if (beam) drawLitClouds(beam);
+
+    const hz = ctx.createLinearGradient(0, H * .75, 0, H);                  // horizon haze
+    hz.addColorStop(0, `rgba(${st[3] | 0},${st[4] | 0},${st[5] | 0},0)`); hz.addColorStop(1, `rgba(${st[3] | 0},${st[4] | 0},${st[5] | 0},.35)`);
+    ctx.fillStyle = hz; ctx.fillRect(0, H * .75, W, H * .25);
+
+    const bA = 1 - ss(.2, .38, prog);                                        // birds only in daylight
+    for (const b of birds) {
+      if (!reduce) {
+        b.px += b.v * k * dt; if (b.px - 20 > W) b.px = -20;
+        let tx = 0, ty = 0;
+        if (ptr.on) { const dx = b.px - ptr.x, dy = b.py - ptr.y, d = Math.hypot(dx, dy) || 1; if (d < 200) { const f = 1 - d / 200; tx = dx / d * f * 120; ty = dy / d * f * 120; } }
+        b.ox += (tx - b.ox) * (1 - Math.exp(-dt * 3)); b.oy += (ty - b.oy) * (1 - Math.exp(-dt * 3));
+      }
+      if (bA > .02) { ctx.globalAlpha = bA; drawBird(b, t); ctx.globalAlpha = 1; }
+    }
+
+    if (rain > .02) {                                                        // rain + lightning
+      ctx.strokeStyle = `rgba(200,215,240,${.4 * rain})`; ctx.lineWidth = 1.1; ctx.beginPath();
+      for (const d of drops) {
+        d.y += d.v * dt / H; if (d.y > 1.05) { d.y = -.05; d.x = Math.random(); }
+        const X = d.x * W, Y = d.y * H; ctx.moveTo(X, Y); ctx.lineTo(X - d.l * .18, Y - d.l);
+      }
+      ctx.stroke();
+    }
+    if (I > .02 && strike) {                                                // lightning flash + bolt
+      ctx.fillStyle = `rgba(200,215,255,${I * .18})`; ctx.fillRect(0, 0, W, H);
+      if (strike.bolt) {
+        const ox = strike.bolt[0].p[0][0], g = ctx.createRadialGradient(ox, 0, 0, ox, H * .2, H * .7);
+        g.addColorStop(0, `rgba(210,225,255,${I * .45})`); g.addColorStop(1, 'rgba(210,225,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.lineJoin = ctx.lineCap = 'round';
+        for (const [w0, a0, col] of [[18, .09, '150,180,255'], [7, .28, '190,210,255'], [2.2, 1, '255,255,255']])
+          for (const part of strike.bolt) {
+            ctx.lineWidth = w0 * k * part.w; ctx.strokeStyle = `rgba(${col},${a0 * I})`; ctx.beginPath();
+            part.p.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+          }
+      }
+    }
+
+    for (let i = items.length - 1; i >= 0; i--) {                            // falling files
+      const it = items[i]; it.t += dt;
+      it.vy = Math.min(it.vy + 520 * k * dt, 460 * k); it.y += it.vy * dt;
+      it.x += it.vx * dt + Math.sin(t * 3 + it.ph) * 22 * dt; it.rot += it.vr * dt;
+      if (it.y > H + 60) items.splice(i, 1); else drawItem(it);
+    }
+    torchOverlay(beam, t, dt);
+    updateHud(st, rain);
+    cost += (performance.now() - t0 - cost) * .08;
+    half = cost > (half ? 9 : 13);                                          // hysteresis so it doesn't flip-flop
+    requestAnimationFrame(frame);
+  }
+  buildNextLayer();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<!-- GSAP + ScrollTrigger: loaded here (end of body) instead of <head> so the
+     ~70KB library download never blocks first paint or CSS parsing. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script>
+  // Mobile nav toggle
+  const navBurger = document.getElementById('navBurger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if(navBurger && mobileMenu){
+    navBurger.addEventListener('click', () => {
+      const open = mobileMenu.classList.toggle('open');
+      navBurger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    mobileMenu.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        navBurger.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  // Pause purely-decorative CSS animations while the tab is backgrounded —
+  // they cost real CPU/battery for zero benefit when nobody can see them.
+  function applyTabVisibility(){
+    document.documentElement.classList.toggle('tab-hidden', document.hidden);
+  }
+  document.addEventListener('visibilitychange', applyTabVisibility);
+  applyTabVisibility();
+
+  // Ambient blue-dust embers drifting behind the hero (canvas, continuous
+  // loop). Skipped for prefers-reduced-motion and on small/touch screens —
+  // it's pure atmosphere, never load-bearing for the page's content, and a
+  // continuous per-frame canvas redraw is one of the heavier things a phone
+  // has to do just to render decoration.
+  const heroEmbersCanvas = document.getElementById('heroEmbers');
+  const prefersReducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isSmallScreen = matchMedia('(max-width: 860px), (hover: none), (pointer: coarse)').matches;
+  if(heroEmbersCanvas && !prefersReducedMotion && !isSmallScreen){
+    const heroSection = heroEmbersCanvas.closest('.hero');
+    const emCtx = heroEmbersCanvas.getContext('2d');
+    let emW = 0, emH = 0, emDPR = Math.min(window.devicePixelRatio || 1, 1.5);
+    let embers = [];
+
+    function emResize(){
+      emW = heroSection.offsetWidth;
+      emH = heroSection.offsetHeight;
+      heroEmbersCanvas.width = emW * emDPR;
+      heroEmbersCanvas.height = emH * emDPR;
+      heroEmbersCanvas.style.width = emW + 'px';
+      heroEmbersCanvas.style.height = emH + 'px';
+      emCtx.setTransform(emDPR, 0, 0, emDPR, 0, 0);
+    }
+
+    function emSeed(){
+      const count = window.innerWidth < 700 ? 18 : 34;
+      embers = Array.from({ length: count }, () => ({
+        x: Math.random() * emW,
+        y: Math.random() * emH,
+        r: 1 + Math.random() * 2.2,
+        speed: 6 + Math.random() * 14,           // px/sec upward drift
+        wobble: 10 + Math.random() * 20,          // px sideways sway
+        wobbleSpeed: 0.2 + Math.random() * 0.4,
+        phase: Math.random() * Math.PI * 2,
+        baseOpacity: 0.15 + Math.random() * 0.35,
+        gold: Math.random() > 0.35
+      }));
+    }
+
+    emResize();
+    emSeed();
+    window.addEventListener('resize', () => { emResize(); });
+
+    let emLast = performance.now();
+    let emRunning = true;
+    let emRafId = null;
+    function emTick(now){
+      const dt = Math.min((now - emLast) / 1000, 0.05);
+      emLast = now;
+      emCtx.clearRect(0, 0, emW, emH);
+      embers.forEach(p => {
+        p.y -= p.speed * dt;
+        p.phase += p.wobbleSpeed * dt;
+        if(p.y < -10){ p.y = emH + 10; p.x = Math.random() * emW; }
+        const x = p.x + Math.sin(p.phase) * p.wobble;
+        const fade = 0.6 + 0.4 * Math.sin(p.phase * 1.3);
+        emCtx.beginPath();
+        emCtx.arc(x, p.y, p.r, 0, Math.PI * 2);
+        emCtx.fillStyle = p.gold
+          ? `rgba(47,111,228,${(p.baseOpacity * fade).toFixed(3)})`
+          : `rgba(111,168,245,${(p.baseOpacity * fade).toFixed(3)})`;
+        emCtx.fill();
+      });
+      if(emRunning) emRafId = requestAnimationFrame(emTick);
+    }
+    emRafId = requestAnimationFrame(emTick);
+
+    // This is pure ambient decoration behind the hero — once the user has
+    // scrolled past it there's no reason to keep painting 30+ particles
+    // every frame, so pause (and resume) the loop based on visibility.
+    new IntersectionObserver((entries) => {
+      const visible = entries[0].isIntersecting;
+      if(visible && !emRunning){
+        emRunning = true;
+        emLast = performance.now();
+        emRafId = requestAnimationFrame(emTick);
+      } else if(!visible && emRunning){
+        emRunning = false;
+        if(emRafId) cancelAnimationFrame(emRafId);
+      }
+    }, { threshold: 0 }).observe(heroSection);
+  }
+
+  // Header blur on scroll
+  const header = document.getElementById('siteHeader');
+  window.addEventListener('scroll', () => {
+    header.classList.toggle('scrolled', window.scrollY > 20);
+  });
+
+  // Vault dial: ticks light up as the ring fills and the number counts to 30
+  (function(){
+    const fill = document.getElementById('dialFill');
+    const num  = document.getElementById('dialNumber');
+    const knob = document.getElementById('dialKnob');
+    const tg   = document.getElementById('dialTicks');
+    const dial = document.getElementById('vaultDial');
+    if(!fill || !dial) return;
+    const C = 2 * Math.PI * 112;
+    const TICKS = 60, ticks = [];
+    const NS = 'http://www.w3.org/2000/svg';
+    for(let i=0;i<TICKS;i++){
+      const major = i % 5 === 0;
+      const a = (i / TICKS) * Math.PI * 2 - Math.PI/2;
+      const r1 = 131, r2 = major ? 141 : 137;
+      const l = document.createElementNS(NS,'line');
+      l.setAttribute('x1',150+Math.cos(a)*r1); l.setAttribute('y1',150+Math.sin(a)*r1);
+      l.setAttribute('x2',150+Math.cos(a)*r2); l.setAttribute('y2',150+Math.sin(a)*r2);
+      l.setAttribute('class','tick'+(major?' major':''));
+      tg.appendChild(l); ticks.push(l);
+    }
+    function render(p){
+      fill.style.strokeDashoffset = C * (1 - p);
+      knob.setAttribute('transform', 'rotate(' + (p*360) + ' 150 150)');
+      num.textContent = Math.round(p * 30);
+      const lit = Math.round(p * TICKS);
+      ticks.forEach((t,i)=> t.classList.toggle('on', i < lit));
+    }
+    render(0);
+    let played = false;
+    window.playDial = function(){
+      if(played) return; played = true;
+      const o = { p: 0 };
+      if(window.gsap){
+        gsap.to(o, { p: 1, duration: 2.4, ease: 'power3.out', onUpdate: () => render(o.p), onComplete: () => render(1) });
+        gsap.fromTo(dial, { scale: 0.86, rotate: -12 }, { scale: 1, rotate: 0, duration: 1.2, ease: 'back.out(1.6)' });
+      } else { render(1); }
+    };
+    new IntersectionObserver((entries, io) => {
+      if(entries.some(e => e.isIntersecting)){ window.playDial(); io.disconnect(); }
+    }, { threshold: 0.35 }).observe(dial);
+  })();
+
+  // Video player: one <video>, nothing downloads until the visitor presses play
+  (function(){
+    const stage=document.getElementById('vpStage'), v=document.getElementById('vpVideo'), cover=document.getElementById('vpCover');
+    if(!stage||!v||!cover) return;
+    const items=[...document.querySelectorAll('#vpList .vp-item')];
+    const title=document.getElementById('vpTitle'), desc=document.getElementById('vpDesc'), label=document.getElementById('vpLabel');
+    let cur=items[0];
+    function select(btn, play){
+      cur=btn; items.forEach(i=>i.setAttribute('aria-current', i===btn ? 'true':'false'));
+      title.textContent=btn.dataset.title.replace(/&amp;/g,'&'); desc.textContent=btn.dataset.desc.replace(/&amp;/g,'&'); label.textContent=title.textContent;
+      v.pause(); v.poster=btn.dataset.poster; v.removeAttribute('src'); v.load();
+      cover.style.backgroundImage='url('+btn.dataset.poster+')'; stage.classList.remove('playing');
+      if(play) start();
+    }
+    function start(){
+      if(!v.getAttribute('src')){ v.src=cur.dataset.src; }
+      stage.classList.add('playing');
+      const p=v.play(); if(p&&p.catch) p.catch(()=>{ stage.classList.remove('playing'); });
+    }
+    cover.addEventListener('click', start);
+    items.forEach(b=>b.addEventListener('click',()=>{ select(b,true); }));
+    v.addEventListener('error',()=>{ stage.classList.remove('playing'); });
+    v.addEventListener('ended',()=>{ stage.classList.remove('playing'); v.removeAttribute('src'); v.load(); });
+    // Pause when scrolled away so a playing video never competes with the page
+    new IntersectionObserver(es=>{ if(!es[0].isIntersecting && !v.paused) v.pause(); },{threshold:0.15}).observe(stage);
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden && !v.paused) v.pause(); });
+  })();
+
+  // =========================================================================
+  // KHAZANA CHEST — plays once when the section enters the viewport
+  // (IntersectionObserver, not scroll-scrubbed). Sequence, timed from the
+  // moment it starts:
+  //   0.0s     Video plays, chroma-keyed live onto a canvas each frame
+  //   ~1.5s    Glow blooms as the lid comes open in the footage
+  //   ~1.7s    Icons erupt from the opening, staggered
+  //   ~2.6s    Four image popups fan in, staggered
+  // Swipe-to-dismiss on the popups runs separately via Pointer Events on
+  // an inner layer, so it never collides with the sequence's own tweens.
+  // =========================================================================
+  if (window.gsap && window.ScrollTrigger) {
+  gsap.registerPlugin(ScrollTrigger);
+
+  // --- Ambient starfield (decorative only) ---
+  (function ckStars(){
+    const layer = document.getElementById('ck-stars');
+    if(!layer) return;
+    const count = window.innerWidth < 640 ? 18 : 34;
+    for(let i=0;i<count;i++){
+      const s = document.createElement('span');
+      s.style.left = Math.random()*100 + '%';
+      s.style.top = Math.random()*100 + '%';
+      s.style.opacity = (0.2 + Math.random()*0.6).toFixed(2);
+      s.style.transform = `scale(${(0.6 + Math.random()*1.6).toFixed(2)})`;
+      layer.appendChild(s);
+    }
+  })();
+
+  // --- Icon-burst layer: four data types, each with a brand-consistent
+  // accent color and a lucide-style stroke icon, scattered generously so
+  // the "eruption" reads as plentiful. ---
+  const CK_ICON_DEFS = [
+    { color:'#2F6FE4', svg:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>' }, // image
+    { color:'#1B4C9C', svg:'<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>' },                                 // video
+    { color:'#E8B84B', svg:'<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M4 8v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8"/><line x1="10" y1="12" x2="14" y2="12"/>' }, // archive/file
+    { color:'#5A6C85', svg:'<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>' } // document
+  ];
+
+  const ckIconLayer = document.getElementById('ck-icon-layer');
+  const ckIconEls = [];
+
+  if(ckIconLayer){
+    const CK_ICON_COUNT = window.innerWidth < 640 ? 10 : 16;
+    for(let i=0;i<CK_ICON_COUNT;i++){
+      const def = CK_ICON_DEFS[i % CK_ICON_DEFS.length];
+      const el = document.createElement('div');
+      el.className = 'ck-icon';
+      el.style.color = def.color;
+      el.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${def.svg}</svg>`;
+      ckIconLayer.appendChild(el);
+
+      // Precompute a random resting position: angle + distance from center,
+      // scaled against viewport so it lands near the edges of the stage.
+      const angle = Math.random() * Math.PI * 2;
+      const distance = (window.innerWidth < 640 ? 90 : 140) + Math.random() * (window.innerWidth < 640 ? 90 : 170);
+      const x = Math.cos(angle) * distance;
+      const y = Math.sin(angle) * distance * 0.75 - 30; // flatten vertically a bit, bias upward
+      const rot = (Math.random() * 70) - 35;
+      const restOpacity = 0.45 + Math.random() * 0.35;
+
+      ckIconEls.push({ el, x, y, rot, restOpacity });
+    }
+  }
+
+  // --- Popups list ---
+  const ckPopups = Array.from(document.querySelectorAll('.ck-popup'));
+  const ckPopupLayer = document.getElementById('ck-popup-layer');
+
+  // --- Chest: pre-keyed transparent frames → canvas -------------------
+  // The white background and the brown ground patch were removed offline,
+  // so the frames are already transparent WebP images (videos/chest-frames/).
+  // No per-pixel keying happens in the browser any more — which is what made
+  // the chest vanish when the page was opened from disk (canvas pixel reads are
+  // blocked there) or when the video path was wrong. We only drawImage().
+  const ckChestCanvas = document.getElementById('ck-chest-canvas');
+  const ckCtx = ckChestCanvas ? ckChestCanvas.getContext('2d') : null;
+  const CK_CANVAS_W = 640, CK_CANVAS_H = 360;
+  const CK_FRAME_DIR = 'videos/chest-frames/';
+  const CK_FRAME_COUNT = 38;           // f00 … f37: settled closed chest → lid cracking open
+  const CK_FPS = 24;
+  const CK_CROSSFADE = 0.4;            // last cracked-lid frame dissolves into the fully open chest
+  const CK_PLAY_TIME = CK_FRAME_COUNT / CK_FPS;
+  const CK_OPEN_AT = CK_PLAY_TIME + CK_CROSSFADE;   // ≈ 2.0s after the reveal starts
+  const ckFrameImgs = new Array(CK_FRAME_COUNT + 1).fill(null);   // last slot = fully open
+
+  function ckFrameSrc(i){
+    return CK_FRAME_DIR + (i === CK_FRAME_COUNT ? 'open' : 'f' + String(i).padStart(2, '0')) + '.webp';
+  }
+  function ckLoadFrame(i){
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => { ckFrameImgs[i] = img; if(i === 0 && !ckSequenceStarted) ckRender(0); };
+    img.src = ckFrameSrc(i);
+  }
+
+  function ckDraw(img, alpha){
+    if(img && alpha > 0.001){
+      ckCtx.globalAlpha = alpha;
+      ckCtx.drawImage(img, 0, 0, CK_CANVAS_W, CK_CANVAS_H);
+    }
+  }
+  // t = seconds since the reveal started (0 = chest sitting closed).
+  function ckRender(t){
+    if(!ckCtx) return;
+    ckCtx.globalCompositeOperation = 'source-over';
+    ckCtx.globalAlpha = 1;
+    ckCtx.clearRect(0, 0, CK_CANVAS_W, CK_CANVAS_H);
+    const last = CK_FRAME_COUNT - 1;
+    if(t < CK_PLAY_TIME){
+      const idx = Math.min(last, Math.floor(t * CK_FPS));
+      ckDraw(ckFrameImgs[idx] || ckFrameImgs[0], 1);
+    } else {
+      const k = Math.min(1, (t - CK_PLAY_TIME) / CK_CROSSFADE);
+      const e = k * k * (3 - 2 * k);
+      // 'lighter' adds the two premultiplied layers, so opacity stays solid through the dissolve
+      ckCtx.globalCompositeOperation = 'lighter';
+      ckDraw(ckFrameImgs[last] || ckFrameImgs[0], 1 - e);
+      ckDraw(ckFrameImgs[CK_FRAME_COUNT] || ckFrameImgs[last], e);
+      ckCtx.globalCompositeOperation = 'source-over';
+    }
+    ckCtx.globalAlpha = 1;
+  }
+
+  // Closed chest is on screen immediately; the rest load in the background.
+  ckLoadFrame(0);
+  for(let i = 1; i <= CK_FRAME_COUNT; i++) ckLoadFrame(i);
+
+  let ckSequenceStarted = false;
+  function ckStartSequence(){
+    if(ckSequenceStarted) return;
+    ckSequenceStarted = true;
+
+    // The heading copy and scroll hint have done their job once the
+    // reveal actually starts playing.
+    gsap.to('#ck-copy', { opacity: 0, duration: 0.6, ease: 'power1.out' });
+    gsap.to('#ck-hint', { opacity: 0, duration: 0.6, ease: 'power1.out' });
+
+    // Drive the frame player off the clock; stops after the chest is fully open.
+    const ckT0 = performance.now();
+    (function ckTick(now){
+      const t = (now - ckT0) / 1000;
+      ckRender(Math.min(t, CK_OPEN_AT));
+      if(t < CK_OPEN_AT) requestAnimationFrame(ckTick);
+    })(ckT0);
+
+// Timed against the chest frame player: the lid reads as fully
+    // open ~2s in, so every beat after this is anchored off that
+    // moment rather than off the start of the clip.
+    const CK_CHEST_FULLY_OPEN = CK_OPEN_AT;
+
+    // Glow blooms as the lid comes open, then settles once it's fully up.
+    gsap.to('#ck-chest-glow', { opacity: 1, scale: 1.25, duration: 0.6, ease: 'power2.out', delay: CK_CHEST_FULLY_OPEN - 0.5 });
+    gsap.to('#ck-chest-glow', { opacity: 0.55, duration: 0.5, delay: CK_CHEST_FULLY_OPEN + 0.3 });
+
+    // Icons only start erupting once the chest has fully opened in the
+    // footage, staggered so the burst reads as plentiful.
+    const CK_ICON_STAGGER = 0.06;
+    const CK_ICON_DURATION = 0.6;
+    ckIconEls.forEach((icon, i) => {
+      gsap.fromTo(icon.el,
+        { opacity: 0, x: 0, y: 0, scale: 0.3, rotate: 0 },
+        {
+          opacity: icon.restOpacity,
+          x: icon.x,
+          y: icon.y,
+          rotate: icon.rot,
+          scale: 1,
+          duration: CK_ICON_DURATION,
+          ease: 'power3.out',
+          delay: CK_CHEST_FULLY_OPEN + i * CK_ICON_STAGGER
+        }
+      );
+    });
+
+    // The moment the very last icon has finished settling into place —
+    // i.e. once the icons are fully out — is when the popups may begin.
+    const ckIconsDoneAt = CK_CHEST_FULLY_OPEN + (ckIconEls.length - 1) * CK_ICON_STAGGER + CK_ICON_DURATION;
+
+    // Popups pop out one at a time, slowly and deliberately: image 1,
+    // then a real pause, then image 2, and so on — not a fast fan-in.
+    const CK_POPUP_BREATHER = 0.4;  // brief pause after the icons settle
+    const CK_POPUP_GAP = 1.0;       // pause between each popup's own entrance
+    const CK_POPUP_DURATION = 0.7;
+    const ckPopupOffsets = [
+      { x: -46, y: -8,  r: -7 },
+      { x:  46, y: -4,  r:  6 },
+      { x: -30, y: 30,  r: -4 },
+      { x:  30, y: 34,  r:  5 }
+    ];
+    ckPopups.forEach((p, i) => {
+      const off = ckPopupOffsets[i % ckPopupOffsets.length];
+      gsap.fromTo(p,
+        { opacity: 0, scale: 0.55, x: 0, y: 60, rotate: 0 },
+        {
+          opacity: 1,
+          scale: 1,
+          x: off.x,
+          y: off.y,
+          rotate: off.r,
+          duration: CK_POPUP_DURATION,
+          ease: 'back.out(1.5)',
+          delay: ckIconsDoneAt + CK_POPUP_BREATHER + i * CK_POPUP_GAP
+        }
+      );
+    });
+
+    // Only let the popups catch clicks once the last one has actually
+    // finished appearing. Once everything has settled, kick off a slow
+    // looping shimmer across the chest interior so the moment keeps
+    // feeling alive instead of freezing on the video's last frame.
+    const ckLastPopupSettledAt = ckIconsDoneAt + CK_POPUP_BREATHER + (ckPopups.length - 1) * CK_POPUP_GAP + CK_POPUP_DURATION;
+    if(ckPopupLayer){
+      gsap.delayedCall(ckLastPopupSettledAt, () => { ckPopupLayer.style.pointerEvents = 'auto'; });
+    }
+    const ckChestShimmer = document.getElementById('ck-chest-shimmer');
+    if(ckChestShimmer && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      gsap.delayedCall(ckLastPopupSettledAt, () => { ckChestShimmer.classList.add('active'); });
+    }
+  }
+
+  const ckPinEl = document.getElementById('ck-pin');
+  if(ckPinEl){
+    const ckObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if(entry.isIntersecting) ckStartSequence();
+      });
+    }, { threshold: 0.4 });
+    ckObserver.observe(ckPinEl);
+  }
+
+  // --- Swipe-to-dismiss on the popups (vanilla Pointer Events) ---
+  const CK_DISMISS_THRESHOLD = 90;   // px of drag before a swipe counts as "dismiss"
+  const CK_FLING_DISTANCE   = 900;   // how far off-screen the card flies away
+
+  function ckWireSwipe(popupEl){
+    const swipeEl = popupEl.querySelector('.ck-popup-swipe');
+    const closeBtn = popupEl.querySelector('.ck-popup-close');
+    if(!swipeEl || !closeBtn) return;
+
+    let dragging = false;
+    let startX = 0, startY = 0;
+    let dx = 0, dy = 0;
+    let pointerId = null;
+
+    function onPointerDown(e){
+      if (popupEl.classList.contains('ck-dismissed')) return;
+      dragging = true;
+      pointerId = e.pointerId;
+      swipeEl.setPointerCapture(pointerId);
+      startX = e.clientX;
+      startY = e.clientY;
+      dx = 0; dy = 0;
+      swipeEl.style.transition = 'none';
+    }
+
+    function onPointerMove(e){
+      if (!dragging || e.pointerId !== pointerId) return;
+      dx = e.clientX - startX;
+      dy = e.clientY - startY;
+      // live-follow the pointer, with a touch of rotation for physicality
+      const rotate = dx * 0.06;
+      gsap.set(swipeEl, { x: dx, y: dy, rotate, opacity: 1 - Math.min(Math.abs(dx) / 500, 0.4) });
+    }
+
+    function onPointerUp(e){
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+
+      const distance = Math.hypot(dx, dy);
+
+      if (distance > CK_DISMISS_THRESHOLD) {
+        dismiss(dx, dy, distance);
+      } else {
+        // spring back to center
+        gsap.to(swipeEl, { x: 0, y: 0, rotate: 0, opacity: 1, duration: 0.45, ease: 'elastic.out(1, 0.6)' });
+      }
+    }
+
+    function dismiss(dirX, dirY, distance){
+      const magnitude = distance || 1;
+      const flyX = (dirX / magnitude) * CK_FLING_DISTANCE;
+      const flyY = (dirY / magnitude) * CK_FLING_DISTANCE;
+
+      popupEl.classList.add('ck-dismissed');
+
+      gsap.to(swipeEl, {
+        x: flyX,
+        y: flyY,
+        rotate: dirX * 0.12,
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power2.in'
+      });
+
+      // fade the outer wrapper too, so it's fully gone (and stays gone even
+      // if the user scrolls back up through this section)
+      gsap.to(popupEl, { opacity: 0, duration: 0.35, delay: 0.1 });
+    }
+
+    swipeEl.addEventListener('pointerdown', onPointerDown);
+    swipeEl.addEventListener('pointermove', onPointerMove);
+    swipeEl.addEventListener('pointerup', onPointerUp);
+    swipeEl.addEventListener('pointercancel', onPointerUp);
+
+    // Fallback "Close" cross button — dismiss upward, same physics
+    closeBtn.addEventListener('click', () => dismiss(0, -1, 1));
+  }
+
+  ckPopups.forEach(ckWireSwipe);
+
+  // Recalculate icon scatter positions on resize/orientation change so the
+  // layout stays sensible across breakpoints (cheap: just refresh
+  // ScrollTrigger; the icon spread itself was computed once at load, which
+  // is fine for a scroll-scrubbed decorative effect).
+  // (ScrollTrigger refreshes itself on resize, debounced)
+
+  // =========================================================================
+  // SCROLL ANIMATIONS — parallax bg, progress bar, feature wheel, reveals.
+  // Every reveal is failsafe'd: if a trigger is ever missed (fast scroll,
+  // anchor jump, resize) the content is forced visible.
+  // =========================================================================
+  (function(){
+    if(typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+    gsap.registerPlugin(ScrollTrigger);
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    // Progress bar
+    gsap.to('#scrollBar', {
+      scaleX: 1, ease: 'none',
+      scrollTrigger: { trigger: document.body, start: 'top top', end: 'bottom bottom', scrub: 0.2 }
+    });
+
+    // Hero drifts up and fades as you leave it
+    gsap.to('.hero', {
+      y: -70, opacity: 0, ease: 'none',
+      scrollTrigger: { trigger: '.hero', start: 'center 35%', end: 'bottom 5%', scrub: true }
+    });
+
+    // ---------- Feature wheel: tiles roll in from the left, across the centre, and off to the right ----------
+    const featSec = document.getElementById('features');
+    const cards = gsap.utils.toArray('#features .feature');
+    if(featSec && cards.length){
+      featSec.classList.add('wheel-on');
+      const grid = featSec.querySelector('.grid-features');
+      const cnt = document.getElementById('wheelCount');
+      const bar = document.getElementById('wheelBar');
+      const N = cards.length, proxy = { t: 0 };
+      let step = 360;
+
+      function layout(){
+        cards.forEach(c => c.style.height = 'auto');
+        const h = Math.max.apply(null, cards.map(c => c.offsetHeight));
+        cards.forEach(c => c.style.height = h + 'px');
+        grid.style.height = h + 'px';
+        step = cards[0].offsetWidth * 1.06;
+      }
+      function render(){
+        const t = proxy.t;
+        cards.forEach((c, i) => {
+          const d = t - i;                 // negative = waiting on the left, positive = already passed to the right
+          const ad = Math.abs(d), sg = d < 0 ? -1 : 1;
+          const x = sg * step * (ad <= 1 ? ad : 1 + (ad - 1) * 0.62);
+          gsap.set(c, {
+            xPercent: -50, x: x, y: ad * ad * 16, z: -ad * 110,
+            rotateY: Math.max(-42, Math.min(42, d * 26)),
+            scale: 1.04 - Math.min(ad, 3) * 0.1,
+            opacity: Math.max(0, 1 - Math.max(0, ad - 0.4) * 0.42),
+            zIndex: 100 - Math.round(ad * 10)
+          });
+          c.classList.toggle('is-active', ad < 0.5);
+        });
+        const idx = Math.min(N, Math.max(1, Math.round(t) + 1));
+        if(cnt) cnt.textContent = String(idx).padStart(2,'0') + ' / ' + String(N).padStart(2,'0');
+        if(bar) bar.style.transform = 'scaleX(' + (t / (N - 1)) + ')';
+      }
+      layout(); render();
+
+      gsap.to(proxy, {
+        t: N - 1, ease: 'none', onUpdate: render,
+        scrollTrigger: {
+          trigger: featSec, start: 'top top',
+          end: () => '+=' + Math.round(window.innerHeight * N * 0.6),
+          pin: true, scrub: 0.6, anticipatePin: 1, invalidateOnRefresh: true,
+          onRefreshInit: layout, onRefresh: render
+        }
+      });
+    }
+
+    // ---------- Reveal helper with failsafe ----------
+    const pending = [];
+    function reveal(trigger, targets, vars, start){
+      const trg = typeof trigger === 'string' ? document.querySelector(trigger) : trigger;
+      const els = gsap.utils.toArray(targets);
+      if(!trg || !els.length) return;
+      const tw = gsap.from(els, Object.assign({ paused: true, immediateRender: true, overwrite: 'auto' }, vars));
+      const item = { trg, tw, done: false };
+      const go = () => { if(!item.done){ item.done = true; tw.play(); } };
+      item.go = go;
+      ScrollTrigger.create({ trigger: trg, start: start || 'top 88%', once: true, onEnter: go });
+      pending.push(item);
+    }
+    function failsafe(){
+      pending.forEach(it => {
+        if(it.done) return;
+        const r = it.trg.getBoundingClientRect();
+        if(r.top < window.innerHeight * 0.9) it.go();
+      });
+    }
+    ScrollTrigger.addEventListener('scrollEnd', failsafe);
+    ScrollTrigger.addEventListener('refresh', failsafe);
+    window.addEventListener('scroll', () => { clearTimeout(failsafe._t); failsafe._t = setTimeout(failsafe, 150); }, { passive: true });
+
+    // ---------- Typewriter helpers ----------
+    function splitChars(el){
+      const chars = [];
+      (function walk(node){
+        Array.from(node.childNodes).forEach(n => {
+          if(n.nodeType === 3){
+            const t = n.nodeValue.replace(/\s+/g, ' ');
+            if(!t.trim()) return;                       // leave layout whitespace alone
+            const wrap = document.createElement('span'); wrap.className = 'tw';
+            for(const ch of t){
+              const sp = document.createElement('span'); sp.className = 'tc'; sp.textContent = ch;
+              wrap.appendChild(sp); chars.push(sp);
+            }
+            n.replaceWith(wrap);
+          } else if(n.nodeType === 1 && !/^(svg|br|canvas|img|video)$/i.test(n.tagName)){
+            walk(n);
+          }
+        });
+      })(el);
+      return chars;
+    }
+    // Types each element in turn once `trigger` scrolls into view (failsafe'd like reveal()).
+    let gCursor = null;   // one shared caret so parallel groups don't show several
+    function typeGroup(els, start, delay){
+      els = els.filter(Boolean);
+      const groups = els.map(e => ({ el: e, chars: splitChars(e) })).filter(g => g.chars.length);
+      if(!groups.length) return;
+      const tl = gsap.timeline({ paused: true, delay: delay || 0 });
+      groups.forEach((g, gi) => {
+        const n = g.chars.length, o = { i: 0 };
+        let last = 0;
+        tl.to(o, {
+          i: n, ease: 'none', duration: Math.min(1.3, Math.max(0.35, n * 0.022)),
+          onUpdate(){
+            const k = Math.floor(o.i);
+            for(let j = last; j < k; j++) g.chars[j].classList.add('on');
+            if(k > 0 && k !== last){
+              if(gCursor) gCursor.classList.remove('cur');
+              gCursor = g.chars[k - 1]; gCursor.classList.add('cur');
+            }
+            last = Math.max(last, k);
+          },
+          onComplete(){ g.chars.forEach(c => c.classList.add('on')); }
+        }, gi === 0 ? 0 : '>-0.05');
+      });
+      tl.call(() => { const c = gCursor; setTimeout(() => { if(c) c.classList.remove('cur'); }, 1000); });
+      const item = { trg: groups[0].el, done: false };
+      item.go = () => { if(!item.done){ item.done = true; tl.play(); } };
+      ScrollTrigger.create({ trigger: groups[0].el, start: start || 'top 90%', once: true, onEnter: item.go });
+      pending.push(item);
+    }
+    // Plain-string typer for text that changes (video captions)
+    function typeString(el, str, dur){
+      if(el.__tw) el.__tw.kill();
+      const o = { i: 0 };
+      el.__tw = gsap.to(o, { i: str.length, duration: dur, ease: 'none',
+        onUpdate: () => { el.textContent = str.slice(0, Math.round(o.i)); },
+        onComplete: () => { el.textContent = str; } });
+    }
+
+
+    // Dividers
+    gsap.utils.toArray('.divider').forEach(d => {
+      reveal(d, d, { opacity: 0, scaleX: 0.3, duration: 1, ease: 'power2.out' }, 'top 95%');
+      reveal(d, d.querySelector('svg'), { scale: 0, rotate: -180, duration: 0.9, ease: 'back.out(2)' }, 'top 95%');
+    });
+
+    // Section headings: typed
+    gsap.utils.toArray('.section-head').forEach(h => {
+      typeGroup([h.querySelector('.eyebrow'), h.querySelector('h2'), h.querySelector('p')], 'top 90%', 0);
+    });
+
+    // Feature wheel + meta appear as the section arrives
+    reveal('#features .grid-features', '#features .grid-features', { y: 70, opacity: 0, duration: 1, ease: 'power3.out' }, 'top 98%');
+    reveal('#features .wheel-meta', '#features .wheel-meta', { opacity: 0, y: 20, duration: 0.8, delay: 0.3 }, 'top 98%');
+
+    // Big panels: rise, then text types in and the buttons/chips cascade
+    ['.vault', '.founder', '.cta-banner'].forEach(sel => {
+      const el = document.querySelector(sel);
+      if(!el) return;
+      reveal(el, el, { y: 80, opacity: 0, scale: 0.97, duration: 1, ease: 'power3.out' }, 'top 88%');
+      reveal(el, el.querySelectorAll('.dial-chips span, .hero-actions'),
+        { y: 26, opacity: 0, duration: 0.7, stagger: 0.07, ease: 'power2.out', delay: 0.5 }, 'top 88%');
+    });
+    const vaultText = document.querySelector('.vault > div:not(.vault-nebula):not(:last-child)');
+    if(vaultText){
+      typeGroup([vaultText.querySelector('.eyebrow'), vaultText.querySelector('h2'), vaultText.querySelector('p')], 'top 88%', 0.5);
+      typeGroup(Array.from(vaultText.querySelectorAll('.vault-list > div')), 'top 92%', 0);
+    }
+    const ft = document.querySelector('.founder-text');
+    if(ft){
+      typeGroup([ft.querySelector('.eyebrow'), ft.querySelector('h2')], 'top 88%', 0.5);
+      ft.querySelectorAll('p').forEach(p => typeGroup([p], 'top 92%', 0));
+      typeGroup([ft.querySelector('.founder-sign'), ft.querySelector('.founder-role')], 'top 94%', 0);
+    }
+    const cta = document.querySelector('.cta-banner');
+    if(cta) typeGroup([cta.querySelector('.eyebrow'), cta.querySelector('h2'), cta.querySelector('p')], 'top 88%', 0.5);
+
+    // Founder photo drift
+    const fp = document.querySelector('.founder-photo img');
+    if(fp){
+      gsap.fromTo(fp, { yPercent: -6, scale: 1.12 }, {
+        yPercent: 6, scale: 1.12, ease: 'none',
+        scrollTrigger: { trigger: '.founder-photo', start: 'top bottom', end: 'bottom top', scrub: true }
+      });
+    }
+
+    // Footer
+    reveal('footer', 'footer .wrap > *', { y: 30, opacity: 0, duration: 0.8, stagger: 0.12, ease: 'power2.out' }, 'top 98%');
+
+    window.addEventListener('load', () => { ScrollTrigger.refresh(); });
+    setTimeout(() => ScrollTrigger.refresh(), 1200);
+  })();
+  } /* end GSAP-dependent block */
+</script>
+
+
+
+<script>
+/* Reveal-by-animation layer: tags every remaining element and animates it in (page load or on scroll). */
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+  const de = document.documentElement; de.classList.add('anim');
+  const tag = (sel, cls, base, step, load) => document.querySelectorAll(sel).forEach((e, i) => {
+    if(e.classList.contains('rv')) return;
+    e.classList.add('rv'); (cls || '').split(' ').filter(Boolean).forEach(c => e.classList.add(c));
+    e.style.setProperty('--d', ((base || 0) + i * (step || 0)).toFixed(2) + 's');
+    if(load) e.dataset.load = '1';
+  });
+  // page load
+  tag('header .brand', 'rv-d', 0.05, 0, true);
+  tag('.nav-links a', 'rv-d', 0.2, 0.09, true);
+  tag('.nav-actions .btn', 'rv-d', 0.55, 0.12, true);
+  tag('.nav-burger', 'rv-z', 0.3, 0, true);
+  tag('#skyHud', 'rv-l', 0.7, 0, true);
+  tag('.mark-wrap', 'rv-z', 0.1, 0, true);
+  tag('.hero-foot', '', 0.95, 0, true);
+  // on scroll
+  tag('.vault-list svg', 'rv-z', 0.2, 0.15);
+  tag('.dial-center .label', '', 0.9, 0);
+  tag('.founder-photo', 'rv-clip', 0, 0);
+  tag('.foot-links a', 'rv-d', 0, 0.08);
+  tag('.foot-copy', '', 0.3, 0);
+  tag('.ns-hint', '', 0.6, 0);
+  tag('.wheel-hint', '', 0.4, 0);
+  const els = Array.from(document.querySelectorAll('.rv'));
+  const show = e => e.classList.add('in');
+  requestAnimationFrame(() => requestAnimationFrame(() => els.filter(e => e.dataset.load).forEach(show)));
+  const io = new IntersectionObserver(es => es.forEach(en => { if(en.isIntersecting){ show(en.target); io.unobserve(en.target); } }),
+    { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+  els.filter(e => !e.dataset.load).forEach(e => io.observe(e));
+  // failsafe: anchor jumps / very fast scrolls still play the animation instead of leaving things hidden
+  let t; const sweep = () => els.forEach(e => { if(!e.classList.contains('in') && e.getBoundingClientRect().top < innerHeight * 0.94) show(e); });
+  addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(sweep, 140); }, { passive: true });
+  setTimeout(sweep, 1500);
+})();
+</script>
+<script>
+/* Pause CSS animations in sections that are off-screen (saves main-thread + GPU time while scrolling) */
+(function(){
+  if(!('IntersectionObserver' in window)) return;
+  const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting) e.target.removeAttribute('data-offscreen'); else e.target.setAttribute('data-offscreen',''); }),{rootMargin:'150px 0px'});
+  document.querySelectorAll('main > section, body > section, section.hero, #features, #ck-pin, #videos, #vault, #founder, #nightstage, .cta-banner').forEach(el=>io.observe(el));
+})();
+</script>
+</body>
+</html>

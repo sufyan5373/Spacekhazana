@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceKhazana — Submission Status</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --bg-dark:#0f0c1b;
+    --bg-card:#ffffff;
+    --text-main:#1e1b4b;
+    --text-muted:#6b7280;
+    --accent:#a855f7;
+    --accent-dark:#7e22ce;
+    --border:#e5e7eb;
+    --success:#059669;
+    --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background: radial-gradient(circle at top, #241b3a 0%, var(--bg-dark) 60%);
+    color:var(--text-main);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    width:100%; max-width:460px; background:var(--bg-card); border-radius:20px;
+    padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  .brand{ display:flex; align-items:center; gap:8px; margin-bottom:18px; }
+  .brand-dot{ width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); }
+  .brand-name{ font-weight:800; font-size:14px; letter-spacing:.02em; color:var(--text-muted); }
+  h1{ font-size:20px; margin:0 0 4px; }
+  .sub{ font-size:13px; color:var(--text-muted); margin:0 0 20px; }
+  .pending-box, .graded-box{ border-radius:14px; padding:20px; text-align:center; }
+  .pending-box{ background:#f8f7fb; }
+  .pending-box svg{ color:var(--text-muted); margin-bottom:8px; }
+  .pending-box p{ font-size:13.5px; color:var(--text-muted); margin:0; }
+  .grade-badge{
+    display:inline-block; font-size:26px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark));
+    padding:10px 22px; border-radius:14px; margin-bottom:12px;
+  }
+  .feedback-box{
+    text-align:left; background:#f8f7fb; border-radius:12px; padding:14px 16px;
+    font-size:13.5px; line-height:1.5; margin-top:10px; white-space:pre-wrap;
+  }
+  .meta{ font-size:11.5px; color:var(--text-muted); margin-top:14px; text-align:center; }
+  .err{ text-align:center; color:var(--danger); font-size:13.5px; }
+  .view-all-btn{
+    display:block; width:100%; margin-top:16px; padding:12px; border:none; border-radius:10px;
+    font-size:13.5px; font-weight:700; text-align:center; text-decoration:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#fff; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><div class="brand-dot"></div><div class="brand-name">SPACEKHAZANA · DROP ROOM</div></div>
+    <div id="content"><p class="sub">Loading…</p></div>
+  </div>
+
+<script>
+const API_HOST = window.location.origin;
+const token = window.location.pathname.split('/').filter(Boolean).pop();
+const contentEl = document.getElementById('content');
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function load(){
+  try{
+    const res = await fetch(`${API_HOST}/api/drop-rooms/submission/${token}`);
+    const data = await res.json();
+    if(!res.ok){ contentEl.innerHTML = `<p class="err">${escapeHtml(data.error || 'Submission not found.')}</p>`; return; }
+    render(data);
+  }catch(e){
+    contentEl.innerHTML = `<p class="err">Could not reach the server. Check your connection and try again.</p>`;
+  }
+}
+
+function render(data){
+  const uploaded = data.uploadedAt ? new Date(data.uploadedAt).toLocaleString() : '';
+  let body;
+  if(!data.gradedAt){
+    body = `
+      <div class="pending-box">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        <p>Not reviewed yet — check back later.</p>
+      </div>`;
+  } else {
+    body = `
+      <div class="graded-box">
+        ${data.grade ? `<div class="grade-badge">${escapeHtml(data.grade)}</div>` : ''}
+        ${data.feedback ? `<div class="feedback-box">${escapeHtml(data.feedback)}</div>` : (!data.grade ? '<p class="sub">Reviewed — no written feedback was left.</p>' : '')}
+      </div>`;
+  }
+
+  const canViewAll = data.roomVisibility === 'public' && data.roomToken;
+  contentEl.innerHTML = `
+    <h1>${escapeHtml(data.name)}</h1>
+    <p class="sub">Submitted to "${escapeHtml(data.roomName)}"</p>
+    ${body}
+    <div class="meta">Uploaded ${escapeHtml(uploaded)}${data.gradedAt ? ' · Reviewed ' + escapeHtml(new Date(data.gradedAt).toLocaleString()) : ''}</div>
+    ${canViewAll ? `<a class="view-all-btn" href="${API_HOST}/drop/${data.roomToken}?gallery=1">👀 View All Uploads (grades &amp; remarks)</a>` : ''}
+  `;
+}
+
+load();
+</script>
+</body>
+</html>

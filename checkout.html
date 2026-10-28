@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Upgrade storage – SpaceKhazana</title>
+<link rel="icon" href="/icons/favicon-32.png">
+<style>
+:root{--bg1:#dbeafe;--bg2:#eff6ff;--b1:#60a5fa;--b2:#93c5fd;--glass:rgba(255,255,255,.55);--glass2:rgba(255,255,255,.8);--stroke:rgba(255,255,255,.85);
+--text:#0f2a5c;--muted:#4b6490;--acc:#1d4ed8;--acc2:#3b82f6;--field:rgba(255,255,255,.72);--line:rgba(29,78,216,.22);--err:#c2273b;--ok:#0e9f6e;--sh:0 20px 60px rgba(29,78,216,.18);color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg1:#071433;--bg2:#0b1f4d;--b1:#1d4ed8;--b2:#2563eb;--glass:rgba(255,255,255,.08);--glass2:rgba(255,255,255,.14);--stroke:rgba(255,255,255,.18);
+--text:#eaf1ff;--muted:#a6bbe6;--acc:#60a5fa;--acc2:#2563eb;--field:rgba(255,255,255,.09);--line:rgba(147,197,253,.3);--err:#ff8a9a;--ok:#4ade80;--sh:0 20px 60px rgba(0,0,0,.45);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text);background:linear-gradient(160deg,var(--bg1),var(--bg2));
+padding:max(24px,env(safe-area-inset-top)) 16px max(40px,env(safe-area-inset-bottom));display:flex;justify-content:center;overflow-x:hidden}
+.blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:.55;pointer-events:none}.o1{width:340px;height:340px;background:var(--b1);top:-90px;left:-90px}.o2{width:380px;height:380px;background:var(--b2);bottom:-120px;right:-100px}
+main{position:relative;width:100%;max-width:880px}
+.glass{background:var(--glass);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);border:1px solid var(--stroke);border-radius:24px;box-shadow:var(--sh)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;margin-bottom:14px}
+.top h1{margin:0;font-size:1.25rem}.top p{margin:2px 0 0;color:var(--muted);font-size:.86rem}
+a.back{color:var(--acc);text-decoration:none;font-weight:600;font-size:.9rem;white-space:nowrap}
+.steps{display:flex;gap:6px;margin-bottom:14px}.steps div{flex:1;text-align:center;font-size:.78rem;color:var(--muted);padding:9px 4px;border-radius:14px;border:1px solid var(--stroke);background:var(--glass)}
+.steps .on{background:linear-gradient(135deg,var(--acc2),var(--acc));color:#fff;border-color:transparent}.steps .done{color:var(--ok)}
+.card{padding:24px;max-width:560px;margin:0 auto}.card.wide{max-width:none}
+h2{margin:0 0 4px;font-size:1.15rem}.sub{margin:0 0 16px;color:var(--muted);font-size:.9rem}
+.step{display:none}.step.on{display:block}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:720px){.tiles{grid-template-columns:1fr}}
+.tile{position:relative;padding:22px 18px;border-radius:20px;border:1.5px solid var(--stroke);background:var(--glass2);cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:10px;transition:transform .15s,border-color .15s}
+.tile:hover{transform:translateY(-3px);border-color:var(--acc2)}.tile.pop{border-color:var(--acc2);box-shadow:0 14px 34px rgba(29,78,216,.25)}
+.tile .tag{position:absolute;top:-11px;right:14px;background:linear-gradient(135deg,var(--acc2),var(--acc));color:#fff;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:99px}
+.tile h3{margin:0;font-size:1.05rem}.tile .gb{font-size:2rem;font-weight:800;color:var(--acc);line-height:1}
+.tile .pr{font-size:1.05rem;font-weight:700}.tile .pr small{color:var(--muted);font-weight:500}
+.tile ul{margin:0;padding:0;list-style:none;color:var(--muted);font-size:.85rem;display:grid;gap:6px}.tile li:before{content:"✓ ";color:var(--ok);font-weight:700}
+.tile .go{margin-top:auto;padding:11px;text-align:center;border-radius:14px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--acc2),var(--acc))}
+.chip{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:var(--glass2);border:1px solid var(--stroke);font-size:.88rem;margin-bottom:6px}
+.chip button{border:0;background:none;color:var(--acc);font:inherit;font-weight:600;cursor:pointer}
+label{display:block;font-size:.85rem;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=email],input[type=tel]{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--field);color:var(--text);font:inherit;outline:none}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:440px){.row{grid-template-columns:1fr}}
+.drop{position:relative;display:flex;align-items:center;justify-content:center;text-align:center;min-height:112px;padding:10px;border:1.5px dashed var(--line);border-radius:16px;background:var(--field);color:var(--muted);font-size:.85rem;overflow:hidden;cursor:pointer}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}.drop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}.drop.has img{display:block}.drop.has span{display:none}
+.err{color:var(--err);font-size:.8rem;min-height:1em;margin-top:5px}
+.btn{width:100%;margin-top:20px;padding:14px;border:0;border-radius:16px;font:inherit;font-weight:700;color:#fff;cursor:pointer;background:linear-gradient(135deg,var(--acc2),var(--acc));box-shadow:0 10px 24px rgba(29,78,216,.35)}
+.btn:disabled{opacity:.6;cursor:wait}.btn.ghost{background:var(--glass2);color:var(--text);box-shadow:none;border:1px solid var(--stroke);margin-top:10px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}.tabs button{flex:1;padding:10px;border-radius:14px;border:1px solid var(--stroke);background:var(--glass);color:var(--text);font:inherit;font-weight:600;cursor:pointer}.tabs button.on{background:linear-gradient(135deg,var(--acc2),var(--acc));color:#fff;border-color:transparent}
+.qr{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px;border-radius:20px;background:var(--glass2);border:1px solid var(--stroke)}
+.qr svg,.qr img{width:188px;height:188px;border-radius:12px;background:#fff;padding:10px;object-fit:contain}.qr small{color:var(--muted);text-align:center}
+.kv{margin-top:14px;border-radius:16px;border:1px solid var(--stroke);background:var(--glass2);overflow:hidden}.kv div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;font-size:.88rem}.kv div+div{border-top:1px solid var(--stroke)}
+.kv span{color:var(--muted)}.kv b{word-break:break-all;text-align:right}
+.copy{border:1px solid var(--line);background:var(--field);color:var(--acc);border-radius:10px;padding:4px 10px;font:inherit;font-size:.78rem;font-weight:600;cursor:pointer}
+.tip{margin-top:12px;padding:10px 14px;border-radius:14px;background:var(--glass2);border:1px solid var(--stroke);font-size:.82rem;color:var(--muted)}
+.ctr{text-align:center}.tick{width:84px;height:84px;margin:6px auto 14px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc2),var(--acc));box-shadow:0 12px 30px rgba(29,78,216,.4)}
+.tick svg{width:42px;height:42px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:d .6s .15s ease forwards}@keyframes d{to{stroke-dashoffset:0}}
+.note{margin-top:14px;text-align:center;font-size:.76rem;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){.tick svg{animation:none;stroke-dashoffset:0}.tile{transition:none}}
+</style>
+</head>
+<body>
+<div class="blob o1"></div><div class="blob o2"></div>
+<main>
+  <div class="top glass"><div><h1>Upgrade your storage</h1><p id="cur">Loading your plan…</p></div><a class="back" href="/app">← Back to drive</a></div>
+  <div class="steps" id="steps"><div>Plan</div><div>Details</div><div>Pay</div><div>Receipt</div></div>
+
+  <section class="card glass wide" id="c-plan"><div class="step on" id="s0">
+    <h2>Choose a plan</h2><p class="sub">Each plan lasts <span id="term">30</span> days. Pay by EasyPaisa, JazzCash or bank transfer.</p>
+    <div class="tiles" id="tiles"></div><div class="err" id="e-load"></div>
+  </div></section>
+
+  <section class="card glass" id="c-main" hidden>
+    <div class="step" id="s1">
+      <div class="chip"><span id="chip1"></span><button id="chg1">Change plan</button></div>
+      <h2>Your details</h2><p class="sub">We use these to verify your payment. All fields are required.</p>
+      <label for="name">Full name</label><input type="text" id="name" autocomplete="name" placeholder="As written on your CNIC"><div class="err" id="e-name"></div>
+      <div class="row"><div><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="you@example.com"><div class="err" id="e-email"></div></div>
+      <div><label for="phone">Phone number</label><input type="tel" id="phone" autocomplete="tel" placeholder="03XX XXXXXXX"><div class="err" id="e-phone"></div></div></div>
+      <label for="cnic">CNIC number</label><input type="text" id="cnic" inputmode="numeric" maxlength="15" placeholder="12345-1234567-1"><div class="err" id="e-cnic"></div>
+      <div class="row"><div><label>CNIC front</label><div class="drop" id="d-front"><input type="file" accept="image/jpeg,image/png,image/webp" aria-label="CNIC front"><img alt=""><span>Tap to upload front</span></div><div class="err" id="e-front"></div></div>
+      <div><label>CNIC back</label><div class="drop" id="d-back"><input type="file" accept="image/jpeg,image/png,image/webp" aria-label="CNIC back"><img alt=""><span>Tap to upload back</span></div><div class="err" id="e-back"></div></div></div>
+      <button class="btn" id="go2">Continue to payment</button><div class="err" id="e-s1"></div>
+    </div>
+
+    <div class="step" id="s2">
+      <h2>Pay <span id="amt"></span></h2><p class="sub">Send the exact amount, and put the reference below in the transaction note.</p>
+      <div class="tabs"><button data-m="easypaisa" class="on">EasyPaisa</button><button data-m="jazzcash">JazzCash</button><button data-m="bank">Bank (IBAN)</button></div>
+      <div class="qr" id="qrbox"></div>
+      <div class="kv"><div><span>Account title</span><b id="p-title"></b></div><div id="r-num"><span id="p-numl"></span><b id="p-num"></b><button class="copy" data-c="p-num">Copy</button></div>
+      <div><span>IBAN</span><b id="p-iban"></b><button class="copy" data-c="p-iban">Copy</button></div><div><span>Reference</span><b id="p-ref"></b><button class="copy" data-c="p-ref">Copy</button></div></div>
+      <button class="btn" id="go3">I’ve paid – Done</button><button class="btn ghost" id="bk1">Back</button>
+    </div>
+
+    <div class="step" id="s3">
+      <h2>Attach your payment screenshot</h2><p class="sub">Upload the confirmation screen showing the amount and transaction ID.</p>
+      <div class="drop" id="d-shot" style="min-height:220px"><input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Transaction screenshot"><img alt=""><span>Tap to attach screenshot</span></div><div class="err" id="e-shot"></div>
+      <label for="txn">Transaction ID <span style="font-weight:400;color:var(--muted)">(optional)</span></label><input type="text" id="txn" maxlength="40" placeholder="e.g. 38472910456">
+      <button class="btn" id="submit">Submit payment</button><button class="btn ghost" id="bk2">Back</button><div class="err" id="e-s3"></div>
+    </div>
+
+    <div class="step" id="s4"><div class="ctr"><div class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h2>Payment submitted</h2><p class="sub">We’ll check your transfer and unlock <b id="o-plan"></b> as soon as it’s verified – usually within a few hours.</p></div>
+      <div class="kv"><div><span>Amount</span><b id="o-amt"></b></div><div><span>Method</span><b id="o-m"></b></div><div><span>Reference</span><b id="o-ref"></b></div><div><span>Status</span><b>Pending review</b></div></div>
+      <a class="btn" style="display:block;text-align:center;text-decoration:none" href="/app">Back to my drive</a>
+    </div>
+  </section>
+
+  <section class="card glass ctr" id="c-login" hidden><h2>Please sign in first</h2><p class="sub">You need to be signed in so we can add the storage to your account.</p><a class="btn" style="display:block;text-decoration:none" href="/">Go to sign in</a></section>
+  <p class="note">Your CNIC and screenshot are used only to verify this payment and are stored privately.</p>
+</main>
+
+<script>
+const $=id=>document.getElementById(id), API=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?'http://localhost:3006':'';
+const TOKEN=localStorage.getItem('spacekhazana_token');
+const S={plan:null,pay:null,method:'easypaisa',ref:null,sig:'',files:{front:null,back:null,shot:null}};
+const money=n=>'PKR '+Number(n).toLocaleString('en-PK'),gbTxt=g=>g>=1024?(g/1024)+' TB':g+' GB';
+const MN={easypaisa:'EasyPaisa',jazzcash:'JazzCash',bank:'Bank transfer'};
+const err=(k,m)=>{$('e-'+k).textContent=m||'';return !m};
+
+function show(id){
+  $('c-plan').hidden=id!=='s0';$('c-main').hidden=id==='s0';
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('on',s.id===id));
+  const i={s0:0,s1:1,s2:2,s3:2,s4:3}[id];
+  [...$('steps').children].forEach((el,n)=>{el.className=id==='s4'||n<i?'done':n===i?'on':'';el.textContent=el.textContent.replace('✓ ','');if(el.className==='done')el.textContent='✓ '+el.textContent});
+  scrollTo({top:0,behavior:'smooth'});
+}
+async function api(path,opt={}){
+  const r=await fetch(API+'/api/manual-payments'+path,{...opt,headers:{'x-auth-token':TOKEN}});
+  const j=await r.json().catch(()=>({}));
+  if(r.status===401){localStorage.removeItem('spacekhazana_token');showLogin();throw new Error('Please sign in again.')}
+  if(!r.ok)throw new Error(j.error||'Something went wrong. Please try again.');
+  return j;
+}
+function showLogin(){['c-plan','c-main','steps'].forEach(i=>{const e=$(i);e.hidden=true;e.style.display='none'});$('c-login').hidden=false}
+
+/* 1 ── plan tiles */
+async function init(){
+  if(!TOKEN)return showLogin();
+  try{
+    const d=await api('/plans');S.pay=d.payment;$('term').textContent=d.termDays;
+    $('cur').textContent=`You have ${gbTxt(d.currentLimitGB)}`+(d.planExpiresAt?` · plan renews by ${new Date(d.planExpiresAt).toLocaleDateString('en-GB',{dateStyle:'medium'})}`:' on the free plan');
+    $('tiles').innerHTML=d.plans.map(p=>`<button class="tile${p.popular?' pop':''}" data-id="${p.id}">${p.popular?'<span class="tag">Most popular</span>':''}
+      <h3>${p.name}</h3><div class="gb">${gbTxt(p.storageGB)}</div><div class="pr">${money(p.price)} <small>/ ${d.termDays} days</small></div>
+      <ul>${p.features.map(f=>`<li>${f}</li>`).join('')}</ul><span class="go">Choose ${p.name}</span></button>`).join('');
+    $('tiles').onclick=e=>{const t=e.target.closest('.tile');if(!t)return;S.plan=d.plans.find(p=>p.id===t.dataset.id);
+      $('chip1').innerHTML=`<b>${S.plan.name}</b> · ${gbTxt(S.plan.storageGB)} · ${money(S.plan.price)}`;show('s1')};
+  }catch(e){err('load',e.message)}
+}
+$('chg1').onclick=()=>show('s0');
+
+/* file pickers */
+function drop(id,key,errKey){
+  const box=$(id),inp=box.querySelector('input');
+  inp.onchange=()=>{const f=inp.files[0];if(!f){S.files[key]=null;box.classList.remove('has');return}
+    if(!/^image\/(jpeg|png|webp)$/.test(f.type)){inp.value='';return err(errKey,'Use a JPG, PNG or WebP image.')}
+    if(f.size>6*1024*1024){inp.value='';return err(errKey,'Image must be under 6 MB.')}
+    S.files[key]=f;box.querySelector('img').src=URL.createObjectURL(f);box.classList.add('has');err(errKey,'')};
+}
+drop('d-front','front','front');drop('d-back','back','back');drop('d-shot','shot','shot');
+$('cnic').oninput=e=>{const d=e.target.value.replace(/\D/g,'').slice(0,13);let o=d.slice(0,5);if(d.length>5)o+='-'+d.slice(5,12);if(d.length>12)o+='-'+d.slice(12);e.target.value=o};
+
+/* 2 ── details -> server creates the request (reused if nothing changed) */
+$('go2').onclick=async()=>{
+  const v={name:$('name').value.trim(),email:$('email').value.trim(),phone:$('phone').value.replace(/[\s-]/g,''),cnic:$('cnic').value};
+  let ok=true;
+  ok=err('name',v.name.split(/\s+/).filter(Boolean).length<2?'Enter your full name (first and last).':'')&&ok;
+  ok=err('email',/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.email)?'':'Enter a valid email address.')&&ok;
+  ok=err('phone',/^(03\d{9}|\+923\d{9})$/.test(v.phone)?'':'Use a mobile number like 03001234567.')&&ok;
+  ok=err('cnic',/^\d{5}-\d{7}-\d$/.test(v.cnic)?'':'CNIC must be 13 digits: 12345-1234567-1.')&&ok;
+  ok=err('front',S.files.front?'':'Upload the front of your CNIC.')&&ok;
+  ok=err('back',S.files.back?'':'Upload the back of your CNIC.')&&ok;
+  if(!ok)return;
+  const f=S.files,sig=[S.plan.id,v.name,v.email,v.phone,v.cnic,f.front.name,f.front.size,f.back.name,f.back.size].join('|');
+  if(S.ref&&sig===S.sig)return toPay();
+  const fd=new FormData();fd.append('planId',S.plan.id);Object.entries(v).forEach(([k,x])=>fd.append(k,x));fd.append('cnicFront',f.front);fd.append('cnicBack',f.back);
+  $('go2').disabled=true;$('go2').textContent='Saving…';err('s1','');
+  try{const r=await api('/start',{method:'POST',body:fd});S.ref=r.ref;S.sig=sig;toPay()}
+  catch(e){err('s1',e.message)}finally{$('go2').disabled=false;$('go2').textContent='Continue to payment'}
+};
+
+/* 3 ── payment page */
+function dummyQR(seed){
+  const N=29;let s=[...seed].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7)||1;const rnd=()=>(s=(s*1664525+1013904223)>>>0)/4294967296;
+  const g=Array.from({length:N},()=>Array.from({length:N},()=>rnd()>.5?1:0));
+  [[0,0],[N-7,0],[0,N-7]].forEach(([ox,oy])=>{for(let y=-1;y<=7;y++)for(let x=-1;x<=7;x++){const X=ox+x,Y=oy+y;if(X<0||Y<0||X>=N||Y>=N)continue;
+    g[Y][X]=(x>=0&&x<=6&&y>=0&&y<=6&&(x===0||x===6||y===0||y===6||(x>=2&&x<=4&&y>=2&&y<=4)))?1:0}});
+  let r='';g.forEach((row,y)=>row.forEach((v,x)=>{if(v)r+=`<rect x="${x}" y="${y}" width="1" height="1"/>`}));
+  return `<svg viewBox="0 0 29 29" shape-rendering="crispEdges" role="img" aria-label="Sample QR"><g fill="#0b2a6b">${r}</g></svg>`;
+}
+function paint(){
+  const m=S.method,P=S.pay,acc=m==='bank'?null:P[m];
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('qrbox').style.display=m==='bank'?'none':'flex';
+  if(acc)$('qrbox').innerHTML=(acc.qrUrl?`<img src="${acc.qrUrl}" alt="${MN[m]} QR code"><small>Scan with the ${MN[m]} app</small>`:dummyQR(S.ref+m)+'<small>Sample QR – use the account number below</small>');
+  $('r-num').style.display=acc?'flex':'none';
+  if(acc){$('p-numl').textContent=MN[m]+' number';$('p-num').textContent=acc.number}
+  $('p-title').textContent=P.accountTitle;$('p-iban').textContent=P.iban+(P.bank?' ('+P.bank+')':'');
+}
+function toPay(){$('amt').textContent=money(S.plan.price);$('p-ref').textContent=S.ref;paint();show('s2')}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{S.method=b.dataset.m;paint()});
+document.querySelectorAll('.copy').forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText($(b.dataset.c).textContent.replace(/ \(.*\)$/,''))}catch(e){}const t=b.textContent;b.textContent='Copied';setTimeout(()=>b.textContent=t,1200)});
+$('go3').onclick=()=>show('s3');$('bk1').onclick=()=>show('s1');$('bk2').onclick=()=>show('s2');
+
+/* 4 ── screenshot -> pending review */
+$('submit').onclick=async()=>{
+  if(!err('shot',S.files.shot?'':'Attach your transaction screenshot to continue.'))return;
+  const fd=new FormData();fd.append('screenshot',S.files.shot);fd.append('method',S.method);fd.append('txnId',$('txn').value.trim());
+  $('submit').disabled=true;$('submit').textContent='Submitting…';err('s3','');
+  try{await api('/'+encodeURIComponent(S.ref)+'/proof',{method:'POST',body:fd});
+    $('o-plan').textContent=S.plan.name+' ('+gbTxt(S.plan.storageGB)+')';$('o-amt').textContent=money(S.plan.price);$('o-m').textContent=MN[S.method];$('o-ref').textContent=S.ref;show('s4')}
+  catch(e){err('s3',e.message)}finally{$('submit').disabled=false;$('submit').textContent='Submit payment'}
+};
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceKhazana — Drop Room</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --bg-dark:#0f0c1b;
+    --bg-card:#ffffff;
+    --text-main:#1e1b4b;
+    --text-muted:#6b7280;
+    --accent:#a855f7;
+    --accent-dark:#7e22ce;
+    --border:#e5e7eb;
+    --success:#059669;
+    --danger:#dc2626;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background: radial-gradient(circle at top, #241b3a 0%, var(--bg-dark) 60%);
+    color:var(--text-main);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    width:100%; max-width:460px; background:var(--bg-card); border-radius:20px;
+    padding:32px 28px; box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  .brand{ display:flex; align-items:center; gap:8px; margin-bottom:18px; }
+  .brand-dot{ width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); }
+  .brand-name{ font-weight:800; font-size:14px; letter-spacing:.02em; color:var(--text-muted); }
+  h1{ font-size:22px; margin:0 0 6px; }
+  .sub{ font-size:14px; color:var(--text-muted); margin:0 0 22px; }
+  .drop-zone{
+    border:2px dashed var(--border); border-radius:16px; padding:30px 16px;
+    text-align:center; cursor:pointer; transition:.15s; margin-bottom:16px;
+  }
+  .drop-zone.dragover{ border-color:var(--accent); background:rgba(168,85,247,0.06); }
+  .drop-zone svg{ color:var(--accent); margin-bottom:8px; }
+  .drop-zone p{ margin:4px 0; font-size:14px; color:var(--text-muted); }
+  .drop-zone .hint{ font-size:12px; }
+  input[type=file]{ display:none; }
+  .form-group{ margin-bottom:14px; }
+  label{ display:block; font-size:12.5px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+  input[type=text]{
+    width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--border);
+    font-size:14px; font-family:inherit; color:var(--text-main);
+  }
+  input[type=text]:focus{ outline:none; border-color:var(--accent); }
+  button.primary{
+    width:100%; padding:13px; border:none; border-radius:10px; font-size:14.5px; font-weight:700;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark)); color:#fff; cursor:pointer;
+  }
+  button.primary:disabled{ opacity:.5; cursor:not-allowed; }
+  .file-pill{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:#f8f7fb; border-radius:10px; padding:10px 12px; font-size:13px; margin-bottom:14px;
+  }
+  .file-pill span{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .file-pill button{ background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:13px; }
+  .status{ font-size:13px; margin-top:14px; text-align:center; min-height:18px; }
+  .status.ok{ color:var(--success); }
+  .status.err{ color:var(--danger); }
+  .progress-wrap{ height:6px; border-radius:4px; background:#eee; overflow:hidden; margin-top:14px; display:none; }
+  .progress-bar{ height:100%; width:0%; background:linear-gradient(135deg,var(--accent),var(--accent-dark)); transition:width .15s; }
+  .closed-box{ text-align:center; padding:20px 0; }
+  .closed-box svg{ color:var(--text-muted); margin-bottom:10px; }
+  .uploaded-list{ margin-top:16px; }
+  .uploaded-item{ font-size:12.5px; color:var(--success); padding:4px 0; }
+  .gallery-wrap{ margin-top:22px; padding-top:18px; border-top:1px solid var(--border); }
+  .secondary-btn{
+    width:100%; padding:11px; border-radius:10px; border:1px solid var(--border);
+    background:#f8f7fb; color:var(--text-main); font-size:13.5px; font-weight:700; cursor:pointer;
+  }
+  #galleryList{ max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+  .gallery-item{ background:#f8f7fb; border-radius:10px; padding:10px 12px; }
+  .gallery-item-top{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    text-decoration:none; color:var(--text-main);
+  }
+  .gallery-item-name{ font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .gallery-item-meta{ font-size:10.5px; color:var(--text-muted); flex-shrink:0; }
+  .gallery-item-grade{ margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .grade-chip{
+    display:inline-block; font-size:11.5px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,var(--accent),var(--accent-dark)); padding:3px 10px; border-radius:20px;
+  }
+  .feedback-text{ font-size:12px; color:var(--text-muted); line-height:1.4; }
+  .gallery-item-pending{ margin-top:6px; font-size:11px; color:#9ca3af; }
+  .gallery-item-thumb{ display:block; width:100%; max-height:220px; border-radius:8px; object-fit:cover; background:#000; }
+</style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="brand"><div class="brand-dot"></div><div class="brand-name">SPACEKHAZANA · DROP ROOM</div></div>
+    <div id="content">
+      <p class="sub">Loading…</p>
+    </div>
+  </div>
+
+<script>
+const API_HOST = window.location.origin;
+const token = window.location.pathname.split('/').filter(Boolean).pop();
+const contentEl = document.getElementById('content');
+let selectedFile = null;
+let roomInfo = null;
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadRoom(){
+  try{
+    const res = await fetch(`${API_HOST}/api/drop-rooms/public/${token}`);
+    const data = await res.json();
+    if(!res.ok){ return renderError(data.error || 'This drop link is invalid.'); }
+    roomInfo = data;
+    if(!data.open){
+      let reason = 'This drop link is no longer accepting uploads.';
+      if(data.expired) reason = 'This drop link has expired.';
+      else if(data.full) reason = 'This drop link has reached its upload limit.';
+      return renderClosed(data, reason);
+    }
+    renderForm(data);
+  }catch(e){
+    renderError('Could not reach the server. Check your connection and try again.');
+  }
+}
+
+function renderError(msg){
+  contentEl.innerHTML = `
+    <h1>Link not found</h1>
+    <p class="sub">${escapeHtml(msg)}</p>`;
+}
+
+function renderClosed(data, reason){
+  contentEl.innerHTML = `
+    <div class="closed-box">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 1 0-8 0v2"/></svg>
+      <h1>${escapeHtml(data.name)}</h1>
+      <p class="sub">${escapeHtml(reason)}</p>
+    </div>`;
+}
+
+function renderForm(data){
+  contentEl.innerHTML = `
+    <h1>${escapeHtml(data.name)}</h1>
+    <p class="sub">${escapeHtml(data.ownerUsername)} is collecting files here. Drop one in — no account needed.</p>
+    <div class="drop-zone" id="dropZone">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12m0-12 4 4m-4-4-4 4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+      <p><strong>Tap to choose a file</strong></p>
+      <p class="hint">or drag and drop it here · up to ${data.maxFileMB} MB</p>
+    </div>
+    <input type="file" id="fileInput">
+    <div id="filePillWrap"></div>
+    <div class="form-group">
+      <label>Your name (optional)</label>
+      <input type="text" id="guestName" placeholder="So they know who this is from" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label>Your email (optional — get notified when graded/replied to)</label>
+      <input type="text" id="guestEmail" placeholder="you@example.com" maxlength="200">
+    </div>
+    <button class="primary" id="uploadBtn" disabled>Select a file first</button>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="status" id="status"></div>
+    <div class="uploaded-list" id="uploadedList"></div>
+    ${data.visibility === 'public' ? `
+    <div class="gallery-wrap">
+      <button class="secondary-btn" id="viewAllBtn" onclick="toggleGallery()">👀 View All Uploads</button>
+      <div id="galleryList" style="display:none;margin-top:10px;"></div>
+    </div>` : ''}
+  `;
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const uploadBtn = document.getElementById('uploadBtn');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => { if(fileInput.files[0]) setFile(fileInput.files[0]); });
+  uploadBtn.addEventListener('click', doUpload);
+
+  // Arriving here via the "View All Uploads" button on drop-status.html
+  // (?gallery=1) — expand the uploads gallery automatically, right under
+  // the "select a file" drop-zone where it already lives, instead of
+  // making the guest find and tap the toggle themselves.
+  if(data.visibility === 'public' && new URLSearchParams(window.location.search).get('gallery') === '1' && !_galleryOpen){
+    toggleGallery();
+    const wrap = document.querySelector('.gallery-wrap');
+    if(wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+let _galleryOpen = false;
+function toggleGallery(){
+  const el = document.getElementById('galleryList');
+  const btn = document.getElementById('viewAllBtn');
+  if(!el) return;
+  _galleryOpen = !_galleryOpen;
+  el.style.display = _galleryOpen ? 'block' : 'none';
+  if(btn) btn.textContent = _galleryOpen ? '🙈 Hide Uploads' : '👀 View All Uploads';
+  if(_galleryOpen) loadPublicGallery();
+}
+
+async function loadPublicGallery(){
+  const el = document.getElementById('galleryList');
+  if(!el) return;
+  el.innerHTML = '<p class="hint">Loading…</p>';
+  try{
+    const res = await fetch(`${API_HOST}/api/drop-rooms/${token}/public-files`);
+    const files = await res.json();
+    if(!res.ok || !Array.isArray(files)){ el.innerHTML = '<p class="hint">Could not load the list.</p>'; return; }
+    if(!files.length){ el.innerHTML = '<p class="hint">Nothing uploaded yet — be the first!</p>'; return; }
+    el.innerHTML = files.map(f => {
+      const fileUrl = `${API_HOST}/api/drop-rooms/${token}/public-files/${f.id}/download`;
+      let preview;
+      if (f.fileType === 'IMAGE') {
+        preview = `<img src="${fileUrl}" alt="${escapeHtml(f.name)}" class="gallery-item-thumb">`;
+      } else if (f.fileType === 'VIDEO') {
+        preview = `<video src="${fileUrl}" class="gallery-item-thumb" controls preload="metadata"></video>`;
+      } else if (f.fileType === 'AUDIO') {
+        preview = `<audio src="${fileUrl}" controls style="width:100%;"></audio>`;
+      } else {
+        preview = `<span class="gallery-item-name">📄 ${escapeHtml(f.name)}</span>`;
+      }
+      return `
+      <div class="gallery-item">
+        <div class="gallery-item-top">
+          <a href="${fileUrl}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;flex:1;min-width:0;">${preview}</a>
+          <span class="gallery-item-meta">${escapeHtml(f.guestName || 'anonymous')} · ${(f.byteSize/1024/1024).toFixed(2)} MB</span>
+        </div>
+        ${f.fileType !== 'IMAGE' && f.fileType !== 'VIDEO' && f.fileType !== 'AUDIO' ? '' : `<div class="gallery-item-name" style="margin-top:6px;">${escapeHtml(f.name)}</div>`}
+        ${f.gradedAt ? `
+        <div class="gallery-item-grade">
+          ${f.grade ? `<span class="grade-chip">${escapeHtml(f.grade)}</span>` : ''}
+          ${f.feedback ? `<span class="feedback-text">${escapeHtml(f.feedback)}</span>` : ''}
+        </div>` : `<div class="gallery-item-pending">Not reviewed yet</div>`}
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML = '<p class="hint">Could not load the list.</p>';
+  }
+}
+
+function setFile(file){
+  selectedFile = file;
+  const wrap = document.getElementById('filePillWrap');
+  wrap.innerHTML = `
+    <div class="file-pill">
+      <span>📄 ${escapeHtml(file.name)} — ${(file.size/1024/1024).toFixed(2)} MB</span>
+      <button onclick="clearFile()">Remove</button>
+    </div>`;
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = false;
+  btn.textContent = 'Send it over';
+}
+
+function clearFile(){
+  selectedFile = null;
+  document.getElementById('filePillWrap').innerHTML = '';
+  document.getElementById('fileInput').value = '';
+  const btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Select a file first';
+}
+
+// Renders one just-uploaded file's row, then immediately (and on demand)
+// checks its grade/feedback so the guest sees it right here in drop.html
+// instead of having to open a separate status page.
+function addUploadedItem(name, submissionToken){
+  const list = document.getElementById('uploadedList');
+  const rowId = `sub-${submissionToken}`;
+  const statusLink = `${window.location.origin}/drop/status/${submissionToken}`;
+  const row = document.createElement('div');
+  row.style.cssText = 'border-top:1px solid var(--border);padding:8px 0;';
+  row.innerHTML = `
+    <div class="uploaded-item">✓ ${escapeHtml(name)}</div>
+    <div id="${rowId}-grade" class="gallery-item-pending">Checking status…</div>
+    <div style="font-size:10.5px;color:var(--text-muted);margin-top:4px;">
+      <a href="#" onclick="refreshSubmission('${submissionToken}');return false;" style="color:var(--accent);">Refresh</a>
+      &nbsp;·&nbsp;<a href="${statusLink}" style="color:var(--accent);word-break:break-all;">Save this link</a>
+    </div>`;
+  list.insertBefore(row, list.firstChild);
+  refreshSubmission(submissionToken);
+}
+
+async function refreshSubmission(submissionToken){
+  const gradeEl = document.getElementById(`sub-${submissionToken}-grade`);
+  if(!gradeEl) return;
+  gradeEl.className = 'gallery-item-pending';
+  gradeEl.textContent = 'Checking status…';
+  try{
+    const res = await fetch(`${API_HOST}/api/drop-rooms/submission/${submissionToken}`);
+    const data = await res.json();
+    if(!res.ok){ gradeEl.textContent = data.error || 'Could not check status.'; return; }
+    if(!data.gradedAt){
+      gradeEl.className = 'gallery-item-pending';
+      gradeEl.textContent = 'Not reviewed yet.';
+    } else {
+      gradeEl.className = 'gallery-item-grade';
+      gradeEl.innerHTML = `
+        ${data.grade ? `<span class="grade-chip">${escapeHtml(data.grade)}</span>` : ''}
+        ${data.feedback ? `<span class="feedback-text">${escapeHtml(data.feedback)}</span>` : (!data.grade ? '<span class="feedback-text">Reviewed — no written feedback was left.</span>' : '')}
+      `;
+    }
+  }catch(e){
+    gradeEl.className = 'gallery-item-pending';
+    gradeEl.textContent = 'Could not check status.';
+  }
+}
+
+function doUpload(){
+  if(!selectedFile) return;
+  const btn = document.getElementById('uploadBtn');
+  const statusEl = document.getElementById('status');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  statusEl.textContent = '';
+  statusEl.className = 'status';
+  progressWrap.style.display = 'block';
+
+  const guestName = document.getElementById('guestName').value.trim();
+  const guestEmail = document.getElementById('guestEmail').value.trim();
+  const fd = new FormData();
+  fd.append('file', selectedFile);
+  if(guestName) fd.append('guestName', guestName);
+  if(guestEmail) fd.append('guestEmail', guestEmail);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API_HOST}/api/drop-rooms/${token}/upload`);
+  xhr.upload.onprogress = (e) => {
+    if(e.lengthComputable) progressBar.style.width = `${Math.round((e.loaded/e.total)*100)}%`;
+  };
+  xhr.onload = () => {
+    progressWrap.style.display = 'none';
+    let data = {};
+    try{ data = JSON.parse(xhr.responseText); }catch{}
+    if(xhr.status >= 200 && xhr.status < 300 && data.success){
+      statusEl.textContent = 'Uploaded! You can send another one.';
+      statusEl.className = 'status ok';
+      addUploadedItem(data.name, data.submissionToken);
+      clearFile();
+      if(roomInfo && roomInfo.visibility === 'public' && _galleryOpen) loadPublicGallery();
+    } else {
+      statusEl.textContent = data.error || 'Upload failed. Please try again.';
+      statusEl.className = 'status err';
+      btn.disabled = false;
+      btn.textContent = 'Try again';
+    }
+  };
+  xhr.onerror = () => {
+    progressWrap.style.display = 'none';
+    statusEl.textContent = 'Network error. Please try again.';
+    statusEl.className = 'status err';
+    btn.disabled = false;
+    btn.textContent = 'Try again';
+  };
+  xhr.send(fd);
+}
+
+loadRoom();
+</script>
+</body>
+</html>

@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpaceKhazana — Command Center</title>
+
+<link rel="manifest" href="/icons/manifest.json">
+
+<!-- Favicons -->
+<link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png">
+
+<!-- Apple touch icons (iOS / Safari) -->
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+
+<!-- Android / Chrome -->
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/android-chrome-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/android-chrome-512.png">
+
+<!-- Windows tiles -->
+<meta name="msapplication-TileColor" content="#1e1b4b">
+<meta name="msapplication-TileImage" content="/icons/mstile-150.png">
+<meta name="msapplication-config" content="/icons/browserconfig.xml">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SpaceKhazana">
+<meta name="application-name" content="SpaceKhazana">
+<meta name="theme-color" content="#1e1b4b">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07060f;
+  --surface:  #0f0d1c;
+  --card:     #13112a;
+  --border:   rgba(255,255,255,.08);
+  --primary:  #7c5cfc;
+  --primary2: #a78bfa;
+  --accent:   #f472b6;
+  --cyan:     #22d3ee;
+  --green:    #34d399;
+  --amber:    #fbbf24;
+  --red:      #f87171;
+  --blue:     #60a5fa;
+  --text:     #f1f0ff;
+  --muted:    #6b6a8a;
+  --dim:      #2e2c50;
+  --success:  #10b981;
+  --danger:   #ef4444;
+  --radius:   14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;overflow-x:hidden;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;transition:transform .3s;}
+.sidebar-logo{padding:28px 24px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);}
+.logo-orb{width:36px;height:36px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#c4b5fd,var(--primary),#4c1d95);box-shadow:0 0 20px rgba(124,92,252,.4);flex-shrink:0;position:relative;}
+.logo-orb::before{content:'';position:absolute;width:46px;height:10px;border:2px solid rgba(244,114,182,.6);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-25deg);}
+.logo-name{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#e2e0ff;letter-spacing:-.3px;line-height:1.2;}
+.logo-name span{color:var(--primary2);display:block;font-size:10px;font-weight:400;letter-spacing:1px;text-transform:uppercase;margin-top:1px;}
+
+.nav-section{padding:16px 12px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'Space Mono',monospace;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 14px;margin:2px 8px;border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:.15s;border:none;background:none;width:calc(100% - 16px);text-align:left;}
+.nav-item:hover{background:rgba(124,92,252,.1);color:var(--primary2);}
+.nav-item.active{background:rgba(124,92,252,.18);color:var(--primary2);font-weight:600;}
+.nav-item .icon{width:16px;height:16px;flex-shrink:0;opacity:.8;}
+.nav-badge{margin-left:auto;background:var(--primary);color:white;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;font-family:'Space Mono',monospace;}
+
+.sidebar-footer{margin-top:auto;padding:16px 12px;border-top:1px solid var(--border);}
+.backend-dot{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);padding:8px 8px;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.online{background:var(--green);box-shadow:0 0 6px var(--green);}
+.dot.offline{background:var(--red);box-shadow:0 0 6px var(--red);}
+
+/* ── MAIN ── */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:90;}
+.topbar-title{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--primary2);letter-spacing:-.3px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-badge{background:rgba(124,92,252,.2);border:1px solid rgba(124,92,252,.4);color:var(--primary2);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;font-family:'Space Mono',monospace;}
+.topbar-time{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);}
+.refresh-btn{background:rgba(124,92,252,.15);border:1px solid rgba(124,92,252,.3);color:var(--primary2);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s;display:flex;align-items:center;gap:6px;}
+.refresh-btn:hover{background:rgba(124,92,252,.3);}
+
+/* ── CONTENT ── */
+.content{padding:28px 32px;flex:1;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;cursor:default;transition:.2s;}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;opacity:.07;transform:translate(20px,-20px);}
+.stat-card.purple::before{background:var(--primary);}
+.stat-card.pink::before{background:var(--accent);}
+.stat-card.cyan::before{background:var(--cyan);}
+.stat-card.green::before{background:var(--green);}
+.stat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:8px;}
+.stat-value{font-size:32px;font-weight:700;color:var(--text);line-height:1;font-family:'Space Mono',monospace;}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+.stat-icon{position:absolute;top:18px;right:18px;font-size:22px;opacity:.4;}
+
+/* ── SECTION TITLES ── */
+.section-title{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--primary2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.card-head-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.card-body{padding:0;}
+
+/* ── TABLES ── */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{padding:10px 16px;background:rgba(255,255,255,.03);color:var(--muted);font-weight:600;text-transform:uppercase;font-size:10px;letter-spacing:.8px;font-family:'Space Mono',monospace;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+.data-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;color:var(--text);}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover{background:rgba(255,255,255,.02);}
+.data-table .mono{font-family:'Space Mono',monospace;font-size:11px;}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;font-family:'Space Mono',monospace;}
+.badge-purple{background:rgba(124,92,252,.2);color:var(--primary2);border:1px solid rgba(124,92,252,.3);}
+.badge-green{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+.badge-red{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3);}
+.badge-amber{background:rgba(251,191,36,.15);color:var(--amber);border:1px solid rgba(251,191,36,.3);}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3);}
+.badge-cyan{background:rgba(34,211,238,.15);color:var(--cyan);border:1px solid rgba(34,211,238,.3);}
+
+/* ── ACTION BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.15s;font-family:'DM Sans',sans-serif;}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:6px;}
+.btn-primary{background:rgba(124,92,252,.2);color:var(--primary2);border:1px solid rgba(124,92,252,.35);}
+.btn-primary:hover{background:rgba(124,92,252,.35);}
+.btn-danger{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3);}
+.btn-danger:hover{background:rgba(248,113,113,.3);}
+.btn-success{background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.3);}
+.btn-success:hover{background:rgba(52,211,153,.3);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted);}
+
+/* ── SEARCH / INPUT ── */
+.search-box{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:7px 12px;}
+.search-box input{background:none;border:none;color:var(--text);font-size:13px;outline:none;width:200px;}
+.search-box input::placeholder{color:var(--muted);}
+.input-field{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;outline:none;font-family:'DM Sans',sans-serif;width:100%;}
+.input-field:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(124,92,252,.15);}
+/* Native <select> dropdown lists render with a white browser popup — force
+   dark text so options (usernames etc.) are actually readable against it. */
+select.input-field{color:var(--text);}
+select.input-field option,
+select.input-field optgroup{background:#ffffff;color:#111827;}
+
+/* ── STORAGE BAR ── */
+.storage-bar{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;display:flex;}
+.sb-videos{background:#60a5fa;transition:width .5s;height:100%;}
+.sb-images{background:#34d399;transition:width .5s;height:100%;}
+.sb-texts{background:#fbbf24;transition:width .5s;height:100%;}
+.sb-docs{background:#a78bfa;transition:width .5s;height:100%;}
+.storage-nums{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px;}
+.storage-nums strong{color:var(--text);font-family:'Space Mono',monospace;}
+
+/* ── FILE THUMBNAILS ── */
+.file-thumb{width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#000;display:block;flex-shrink:0;}
+.file-thumb-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:rgba(255,255,255,.05);border:1px solid var(--border);}
+
+/* ── USER ROW STORAGE ── */
+.mini-bar{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:4px;}
+.mini-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));transition:width .4s;}
+
+/* ── QUOTA INPUT ── */
+.quota-spin{width:70px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 8px;text-align:center;outline:none;font-family:'Space Mono',monospace;}
+.quota-spin:focus{border-color:var(--primary);}
+
+/* ── FILE ICON ── */
+.file-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+
+/* ── ACTIVITY ── */
+.activity-item{display:flex;align-items:flex-start;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.04);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.activity-text{font-size:13px;color:var(--text);flex:1;}
+.activity-time{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;white-space:nowrap;}
+
+/* ── CHART ── */
+.donut-wrap{display:flex;align-items:center;gap:24px;padding:16px 20px;}
+.donut-svg{flex-shrink:0;}
+.donut-legend{display:flex;flex-direction:column;gap:8px;flex:1;}
+.dl-row{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+.dl-dot{width:8px;height:8px;border-radius:2px;margin-right:7px;flex-shrink:0;}
+
+/* ── TOAST ── */
+#toasts{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:9999;}
+.toast-item{background:#1e1c3a;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:0 10px 30px rgba(0,0,0,.4);animation:toastIn .25s ease;max-width:300px;}
+.toast-item.ok{border-left:3px solid var(--green);}
+.toast-item.err{border-left:3px solid var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(5,4,15,.8);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:500;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:28px;width:100%;max-width:440px;box-shadow:0 40px 80px rgba(0,0,0,.5);}
+.modal h3{font-family:'Space Mono',monospace;font-size:16px;margin-bottom:8px;color:var(--text);}
+.modal p{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;font-family:'Space Mono',monospace;}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:380px;box-shadow:0 40px 80px rgba(0,0,0,.6);}
+.login-box h2{font-family:'Space Mono',monospace;font-size:18px;margin-bottom:6px;color:var(--text);}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.login-error{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:10px;padding:4px;margin-bottom:20px;}
+.tab{padding:7px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);border:none;background:none;transition:.15s;font-family:'DM Sans',sans-serif;}
+.tab.active{background:var(--dim);color:var(--text);}
+
+/* ── FILE PREVIEW MODAL ── */
+.preview-modal-bg{position:fixed;inset:0;background:rgba(5,4,15,.95);display:none;align-items:center;justify-content:center;z-index:600;flex-direction:column;gap:16px;}
+.preview-modal-bg.open{display:flex;}
+#previewImg{max-width:88vw;max-height:80vh;border-radius:10px;object-fit:contain;box-shadow:0 30px 60px rgba(0,0,0,.7);}
+#previewVideo{max-width:90vw;max-height:80vh;border-radius:10px;background:#000;outline:none;}
+.preview-bar{display:flex;align-items:center;gap:12px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .main{margin-left:0;}
+  .stat-grid{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:600px){
+  .stat-grid{grid-template-columns:1fr;}
+  .content{padding:16px;}
+  .topbar{padding:0 16px;}
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px;}
+
+/* ── GRID LAYOUT FOR DASHBOARD ── */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.dash-grid .span2{grid-column:1/-1;}
+@media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}
+
+/* empty state */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+.empty .emoji{font-size:32px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+      <div class="logo-orb" style="width:42px;height:42px;"></div>
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:#e2e0ff;">SpaceKhazana</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">Command Center</div>
+      </div>
+    </div>
+    <h2>Admin Login</h2>
+    <p>Enter the admin key to access the command center. This is verified against the live server on every load — it is never stored on disk by this page.</p>
+    <div id="loginError" class="login-error"></div>
+    <div class="form-group"><label>Admin Key</label><input class="input-field" id="liKey" placeholder="paste your admin key" type="password" autocomplete="off"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;margin-top:8px;font-size:14px;" onclick="doLogin()">Unlock Command Center</button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-orb"></div>
+    <div class="logo-name">SpaceKhazana<span>Command Center</span></div>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <button class="nav-item active" onclick="nav('dashboard')" id="nav-dashboard">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+    Dashboard
+  </button>
+
+  <div class="nav-section">Data</div>
+  <button class="nav-item" onclick="nav('users')" id="nav-users">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Users
+    <span class="nav-badge" id="navBadgeUsers">0</span>
+  </button>
+  <button class="nav-item" onclick="nav('files')" id="nav-files">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    All Files
+    <span class="nav-badge" id="navBadgeFiles">0</span>
+  </button>
+  <button class="nav-item" onclick="nav('folders')" id="nav-folders">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Folders
+    <span class="nav-badge" id="navBadgeFolders">0</span>
+  </button>
+  <button class="nav-item" onclick="nav('trash')" id="nav-trash">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    Trash
+    <span class="nav-badge" id="navBadgeTrash">0</span>
+  </button>
+
+  <div class="nav-section">Money</div>
+  <button class="nav-item" onclick="nav('payments')" id="nav-payments">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Payments
+    <span class="nav-badge" id="navBadgePayments">0</span>
+  </button>
+
+  <div class="nav-section">System</div>
+  <button class="nav-item" onclick="nav('activity')" id="nav-activity">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Activity Log
+  </button>
+  <button class="nav-item" onclick="nav('shares')" id="nav-shares">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    Shared Links
+  </button>
+  <button class="nav-item" onclick="nav('broadcast')" id="nav-broadcast">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9-9"/><path d="M4 4v7h7"/><path d="M4 15v-.5a4.5 4.5 0 1 1 9 0V15"/><circle cx="18.5" cy="15.5" r="2.5"/><path d="M8.5 15h10"/></svg>
+    Broadcast Update
+  </button>
+
+  <div class="sidebar-footer">
+    <div class="backend-dot"><div class="dot" id="backendDot"></div><span id="backendStatus">Checking backend…</span></div>
+    <button class="nav-item" style="margin-top:4px;color:var(--red);" onclick="doLogout()">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Sign Out
+    </button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <button onclick="document.getElementById('sidebar').classList.toggle('open')" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;" id="menuBtn">☰</button>
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-badge">MASTER ADMIN</div>
+      <div class="topbar-time" id="topbarClock"></div>
+      <button class="refresh-btn" onclick="loadAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="stat-grid">
+        <div class="stat-card purple">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value" id="ds-users">—</div>
+          <div class="stat-sub">Registered accounts</div>
+          <div class="stat-icon">👤</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">Total Files</div>
+          <div class="stat-value" id="ds-files">—</div>
+          <div class="stat-sub">Active storage objects</div>
+          <div class="stat-icon">📄</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-label">Storage Used</div>
+          <div class="stat-value" id="ds-storage">—</div>
+          <div class="stat-sub" id="ds-storage-sub">Across all accounts</div>
+          <div class="stat-icon">💾</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Total Folders</div>
+          <div class="stat-value" id="ds-trash">—</div>
+          <div class="stat-sub">Across all accounts</div>
+          <div class="stat-icon">📁</div>
+        </div>
+      </div>
+
+      <div class="dash-grid">
+        <!-- Storage by category -->
+        <div class="card">
+          <div class="card-head"><div class="card-head-title">📊 Storage by Category</div></div>
+          <div class="donut-wrap">
+            <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="42" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="14"/>
+              <circle id="dc-videos" cx="55" cy="55" r="42" fill="none" stroke="#60a5fa" stroke-width="14" stroke-dasharray="0 264" stroke-linecap="butt" transform="rotate(-90 55 55)" style="transition:stroke-dasharray .6s,stroke-dashoffset .6s;"/>
+              <circle id="dc-images" cx="55" cy="55" r="42" fill="none" stroke="#34d399" stroke-width="14" stroke-dasharray="0 264" stroke-linecap="butt" transform="rotate(-90 55 55)" style="transition:stroke-dasharray .6s,stroke-dashoffset .6s;"/>
+              <circle id="dc-texts" cx="55" cy="55" r="42" fill="none" stroke="#fbbf24" stroke-width="14" stroke-dasharray="0 264" stroke-linecap="butt" transform="rotate(-90 55 55)" style="transition:stroke-dasharray .6s,stroke-dashoffset .6s;"/>
+              <circle id="dc-docs" cx="55" cy="55" r="42" fill="none" stroke="#a78bfa" stroke-width="14" stroke-dasharray="0 264" stroke-linecap="butt" transform="rotate(-90 55 55)" style="transition:stroke-dasharray .6s,stroke-dashoffset .6s;"/>
+              <text x="55" y="50" text-anchor="middle" fill="#e2e0ff" font-size="14" font-weight="700" font-family="Space Mono,monospace" id="dc-pct">0%</text>
+              <text x="55" y="65" text-anchor="middle" fill="#6b6a8a" font-size="9" font-family="DM Sans,sans-serif">of quota</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="dl-row"><span style="display:flex;align-items:center;"><span class="dl-dot" style="background:#60a5fa;"></span>Videos</span><span id="dc-vb" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">0 B</span></div>
+              <div class="dl-row"><span style="display:flex;align-items:center;"><span class="dl-dot" style="background:#34d399;"></span>Images</span><span id="dc-ib" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">0 B</span></div>
+              <div class="dl-row"><span style="display:flex;align-items:center;"><span class="dl-dot" style="background:#fbbf24;"></span>Texts</span><span id="dc-tb" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">0 B</span></div>
+              <div class="dl-row"><span style="display:flex;align-items:center;"><span class="dl-dot" style="background:#a78bfa;"></span>Docs &amp; other</span><span id="dc-db" style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);">0 B</span></div>
+            </div>
+          </div>
+          <div style="padding:0 20px 18px;">
+            <div class="storage-bar">
+              <div class="sb-videos" id="sb-videos" style="width:0%;"></div>
+              <div class="sb-images" id="sb-images" style="width:0%;"></div>
+              <div class="sb-texts" id="sb-texts" style="width:0%;"></div>
+              <div class="sb-docs" id="sb-docs" style="width:0%;"></div>
+            </div>
+            <div class="storage-nums">
+              <span>Total used: <strong id="storageTotalUsed">0 B</strong></span>
+              <span>Capacity: <strong id="storageTotalCap">0 B</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Per-user storage -->
+        <div class="card">
+          <div class="card-head"><div class="card-head-title">👥 Storage per User</div></div>
+          <div id="userStorageList" style="padding:12px 20px;display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="card span2">
+          <div class="card-head">
+            <div class="card-head-title">⚡ Recent Activity</div>
+            <button class="btn btn-ghost btn-sm" onclick="nav('activity')">View all →</button>
+          </div>
+          <div id="dashActivity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS PAGE -->
+    <div class="page" id="page-users">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input placeholder="Search users…" oninput="filterUsers(this.value)" id="userSearch">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div style="font-size:12px;color:var(--muted);">Manage quotas, passwords, drives</div>
+          <button class="btn btn-success" onclick="document.getElementById('modalAddUser').classList.add('open')">+ Add User</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="data-table" id="usersTable">
+            <thead><tr><th>#</th><th>Username</th><th>Password</th><th>User ID</th><th>Joined</th><th>Files</th><th>Quota</th><th>Used</th><th>Actions</th></tr></thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILES PAGE -->
+    <div class="page" id="page-files">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input placeholder="Search files…" oninput="filterFiles(this.value)" id="fileSearch">
+          </div>
+          <div class="tabs" style="margin-bottom:0;">
+            <button class="tab active" onclick="setFileFilter('ALL',this)">All</button>
+            <button class="tab" onclick="setFileFilter('VIDEOS',this)">Videos</button>
+            <button class="tab" onclick="setFileFilter('IMAGES',this)">Images</button>
+            <button class="tab" onclick="setFileFilter('TEXTS',this)">Texts</button>
+            <button class="tab" onclick="setFileFilter('DOCUMENTS',this)">Docs</button>
+          </div>
+        </div>
+        <select class="input-field" style="width:160px;" onchange="filterFilesByUser(this.value)" id="fileUserFilter"><option value="">All users</option></select>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="data-table" id="filesTable">
+            <thead><tr><th>Type</th><th>Name</th><th>Owner</th><th>Folder</th><th>Size</th><th>Actions</th></tr></thead>
+            <tbody id="filesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOLDERS PAGE -->
+    <div class="page" id="page-folders">
+      <div style="margin-bottom:20px;">
+        <div class="search-box" style="display:inline-flex;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input placeholder="Search folders…" oninput="filterFolders(this.value)" id="folderSearch">
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>Folder Name</th><th>Owner</th><th>Files Inside</th><th>Actions</th></tr></thead>
+            <tbody id="foldersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRASH PAGE -->
+    <div class="page" id="page-trash">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:0;">Trash</div>
+        <button class="btn btn-danger" onclick="emptyAllTrash()">🗑 Empty All Trash</button>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>Type</th><th>Name</th><th>Owner</th><th>Size</th><th>Deleted</th><th>Actions</th></tr></thead>
+            <tbody id="trashTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY PAGE -->
+    <div class="page" id="page-activity">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="section-title" style="margin-bottom:0;">Activity Log</div>
+        <select class="input-field" style="width:180px;" onchange="filterActivity(this.value)" id="activityUserFilter"><option value="">All users</option></select>
+      </div>
+      <div class="card"><div id="activityFeed"></div></div>
+    </div>
+
+    <!-- SHARES PAGE -->
+    <div class="page" id="page-shares">
+      <div style="margin-bottom:20px;"><div class="section-title" style="margin-bottom:0;">Shared Links</div></div>
+      <div class="card">
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>Token</th><th>Created By</th><th>File</th><th>Size</th><th>Actions</th></tr></thead>
+            <tbody id="sharesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- BROADCAST UPDATE PAGE -->
+    <div class="page" id="page-broadcast">
+      <div style="margin-bottom:20px;"><div class="section-title" style="margin-bottom:0;">Broadcast Update</div></div>
+      <div class="card">
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:16px;max-width:560px;">
+            Sends a "new update launched" popup and notification-bar alert to every visitor currently
+            on the site — logged in or still on the login screen. When they tap
+            <strong style="color:var(--primary2);">Update Now</strong>, their browser clears its cache and
+            hard-refreshes to pick up the latest version.
+          </p>
+          <div class="form-group">
+            <label>Message shown to users</label>
+            <textarea class="input-field" id="broadcastMsg" rows="3" style="width:100%;resize:vertical;font-family:inherit;"
+              placeholder="A new update has been launched. Update now to get the latest version.">A new update has been launched. Update now to get the latest version.</textarea>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">
+            <button class="btn btn-primary" onclick="sendBroadcastUpdate()">🚀 Send Update Notification to All Users</button>
+            <button class="btn btn-ghost" onclick="clearBroadcastUpdate()">Retract Current Announcement</button>
+          </div>
+          <div id="broadcastStatus" style="margin-top:16px;font-size:12.5px;color:var(--muted);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENTS PAGE -->
+    <div class="page" id="page-payments">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div class="section-title" style="margin-bottom:0;">Payments &amp; Profit</div>
+        <button class="btn btn-success" onclick="openRecordPurchase()">+ Record Purchase</button>
+      </div>
+
+      <!-- Pricing model summary -->
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head"><div class="card-head-title">⚙️ Pricing Model</div></div>
+        <div style="padding:16px 20px;display:flex;gap:28px;flex-wrap:wrap;font-size:12.5px;">
+          <div><span style="color:var(--muted);">Free storage</span><br><strong id="pm-free" style="font-family:'Space Mono',monospace;color:var(--primary2);font-size:15px;">10 GB</strong></div>
+          <div><span style="color:var(--muted);">Price after free tier</span><br><strong id="pm-price" style="font-family:'Space Mono',monospace;color:var(--primary2);font-size:15px;">Rs. 5 / GB</strong></div>
+          <div><span style="color:var(--muted);">User discount</span><br><strong id="pm-discount" style="font-family:'Space Mono',monospace;color:var(--green);font-size:15px;">10%</strong></div>
+          <div><span style="color:var(--muted);">Affiliate commission</span><br><strong id="pm-aff" style="font-family:'Space Mono',monospace;color:var(--accent);font-size:15px;">20% of amount paid</strong></div>
+        </div>
+        <div style="padding:0 20px 16px;font-size:11.5px;color:var(--muted);">
+          Example: a user buys <strong style="color:var(--text);">20 GB</strong> extra → list price Rs. 100 → 10% discount (Rs. 10) → user pays
+          <strong style="color:var(--text);">Rs. 90</strong>. If they came through an affiliate, that affiliate gets 20% of Rs. 90 =
+          <strong style="color:var(--text);">Rs. 18</strong>, leaving <strong style="color:var(--text);">Rs. 72</strong> profit on that sale
+          (Rs. 90 profit if there was no affiliate).
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="stat-grid">
+        <div class="stat-card purple">
+          <div class="stat-label">Total Revenue</div>
+          <div class="stat-value" id="pay-revenue">—</div>
+          <div class="stat-sub">Collected from users, after discount</div>
+          <div class="stat-icon">💰</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Net Profit</div>
+          <div class="stat-value" id="pay-profit">—</div>
+          <div class="stat-sub">Revenue minus affiliate payouts</div>
+          <div class="stat-icon">📈</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-label">Affiliate Payouts</div>
+          <div class="stat-value" id="pay-affiliate">—</div>
+          <div class="stat-sub">Paid to referrers (20% of revenue)</div>
+          <div class="stat-icon">🤝</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-label">GB Sold</div>
+          <div class="stat-value" id="pay-gb">—</div>
+          <div class="stat-sub" id="pay-discount-sub">Rs. 0 given in discounts</div>
+          <div class="stat-icon">📦</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-head-title">🧾 Purchase History</div></div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>User</th><th>GB</th><th>List Price</th><th>Discount</th><th>Amount Paid</th><th>Affiliate</th><th>Affiliate Cut</th><th>Profit</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="paymentsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div class="modal-bg" id="modalResetPw">
+  <div class="modal">
+    <h3>🔑 Reset Password</h3>
+    <p>Set a new password for <strong id="rpw-name" style="color:var(--primary2);"></strong>.</p>
+    <input type="hidden" id="rpw-id">
+    <div class="form-group">
+      <label>New Password</label>
+      <input class="input-field" id="rpw-input" type="text" placeholder="Enter new password…"
+             onkeydown="if(event.key==='Enter') submitResetPw()">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitResetPw()">Set Password</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalResetPw')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECORD PURCHASE MODAL -->
+<div class="modal-bg" id="modalRecordPurchase">
+  <div class="modal">
+    <h3>💳 Record a Purchase</h3>
+    <p>Logs a storage purchase, bumps that user's quota, and — if an affiliate code is attached — credits the affiliate automatically.</p>
+    <div class="form-group">
+      <label>User</label>
+      <select class="input-field" id="rp-user"></select>
+    </div>
+    <div class="form-group">
+      <label>GB Purchased (above free tier)</label>
+      <input class="input-field" id="rp-gb" type="number" min="1" step="1" placeholder="e.g. 20">
+    </div>
+    <div class="form-group">
+      <label>Affiliate Code (optional)</label>
+      <input class="input-field" id="rp-affcode" type="text" placeholder="e.g. SUFYAN10">
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <input class="input-field" id="rp-note" type="text" placeholder="e.g. Safepay ref #1234">
+    </div>
+    <div id="rp-preview" style="font-size:12px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-success" onclick="submitRecordPurchase()">Record Purchase</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalRecordPurchase')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div class="modal-bg" id="modalAddUser">
+  <div class="modal">
+    <h3>Add New User</h3>
+    <p>Create a new SpaceKhazana account directly from the admin panel.</p>
+    <div class="form-group"><label>Username</label><input class="input-field" id="au-username" placeholder="username"></div>
+    <div class="form-group"><label>Email</label><input class="input-field" id="au-email" type="email" placeholder="user@email.com"></div>
+    <div class="form-group"><label>Password</label><input class="input-field" id="au-password" type="text" placeholder="password"></div>
+    <div class="form-group"><label>Storage Limit (GB)</label><input class="input-field" id="au-quota" type="number" value="30" min="1" max="2000"></div>
+    <div class="modal-actions">
+      <button class="btn btn-success" onclick="submitAddUser()">Create User</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalAddUser')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal-bg" id="modalEditUser">
+  <div class="modal">
+    <h3>Edit User</h3>
+    <p>Modify account details for <strong id="eu-name" style="color:var(--primary2);"></strong>.</p>
+    <input type="hidden" id="eu-username-orig">
+    <div class="form-group"><label>Email</label><input class="input-field" id="eu-email"></div>
+    <div class="form-group"><label>Password</label><input class="input-field" id="eu-password"></div>
+    <div class="form-group"><label>Storage Limit (GB)</label><input class="input-field" id="eu-quota" type="number" min="1" max="2000"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="submitEditUser()">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalEditUser')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-bg" id="modalConfirm">
+  <div class="modal">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmMsg">This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="confirmBtn">Confirm</button>
+      <button class="btn btn-ghost" onclick="closeModal('modalConfirm')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- FILE/IMAGE PREVIEW MODAL -->
+<div class="preview-modal-bg" id="previewModal">
+  <div class="preview-bar">
+    <span id="previewName" style="color:#e2e0ff;font-size:14px;font-weight:600;max-width:60vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    <a id="previewDownload" download style="background:rgba(255,255,255,.12);color:white;text-decoration:none;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;">⬇ Download</a>
+    <button onclick="closePreview()" style="background:rgba(255,255,255,.12);border:none;color:white;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;">✕</button>
+  </div>
+  <img id="previewImg" src="" alt="" style="display:none;">
+  <video id="previewVideo" controls playsinline preload="auto" style="display:none;"></video>
+</div>
+
+<!-- TOASTS -->
+<div id="toasts"></div>
+
+<!-- STORAGE BROWSER MODAL -->
+<div class="modal-bg" id="modalStorage" style="align-items:stretch;padding:20px;">
+  <div class="modal" style="max-width:860px;width:100%;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 style="margin-bottom:0;">📦 Storage — <span id="storageBrowserUsername" style="color:var(--primary2);"></span></h3>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span id="storageBrowserStats" style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;"></span>
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modalStorage')">✕ Close</button>
+      </div>
+    </div>
+    <!-- Breadcrumb -->
+    <div id="storageBreadcrumb" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:var(--muted);"></div>
+    <div style="flex:1;overflow-y:auto;">
+      <table class="data-table" id="storageTable">
+        <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="storageTbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3006'
+  : `${window.location.protocol}//${window.location.hostname}`;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+// SECURITY: this file contains NO admin key or password of any kind. There is
+// nothing to find here if it ever leaks — the only thing that grants access is
+// knowing the actual key, which lives in your head / password manager and is
+// verified against the live server every time, never checked locally against
+// a value baked into this page. It's kept in sessionStorage (not localStorage)
+// so it disappears the moment this tab/browser closes, rather than sitting on
+// disk indefinitely.
+let currentAdminKey = sessionStorage.getItem('sk_admin_key') || null;
+let authed = false;
+
+function adminHeaders() {
+  return { 'Content-Type': 'application/json', 'x-admin-key': currentAdminKey || '' };
+}
+
+async function tryUnlock(key) {
+  const r = await fetch(API + '/api/admin/stats', { headers: { 'x-admin-key': key } });
+  return r.ok;
+}
+
+// Called right after a key is confirmed valid — replaces it with a fresh one
+// server-side so the key that just got you in is never reusable again.
+// Returns { key, rotated } — rotated is false if the call failed for any
+// reason, so the caller can tell the difference instead of assuming success.
+async function rotateKeyNow(validatedKey) {
+  try {
+    const r = await fetch(API + '/api/admin/rotate-key', { method: 'POST', headers: { 'x-admin-key': validatedKey } });
+    if (!r.ok) return { key: validatedKey, rotated: false };
+    const data = await r.json();
+    if (!data.adminKey) return { key: validatedKey, rotated: false };
+    return { key: data.adminKey, rotated: true };
+  } catch {
+    return { key: validatedKey, rotated: false }; // offline/network hiccup — don't break the session over it
+  }
+}
+
+async function doLogin() {
+  const k = document.getElementById('liKey').value.trim();
+  const err = document.getElementById('loginError');
+  err.style.display = 'none';
+  if (!k) return;
+  try {
+    const valid = await tryUnlock(k);
+    if (!valid) throw new Error('rejected');
+    const { key: newKey, rotated } = await rotateKeyNow(k);
+    currentAdminKey = newKey;
+    sessionStorage.setItem('sk_admin_key', newKey);
+    authed = true;
+    document.getElementById('loginScreen').style.display = 'none';
+    loadAll();
+    if (typeof toast === 'function') {
+      if (rotated) {
+        toast('🔑 New admin key generated for this session — check data/.secrets.json on other devices.', 'ok', 5000);
+      } else {
+        toast('⚠️ Logged in, but key rotation failed — you are still using the OLD key. Check the server is running the latest server.js.', 'error', 7000);
+      }
+    }
+  } catch {
+    err.style.display = 'block';
+    err.innerText = '❌ Invalid admin key, or the server is unreachable.';
+  }
+}
+document.getElementById('liKey').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  sessionStorage.removeItem('sk_admin_key');
+  currentAdminKey = null;
+  authed = false;
+  location.reload();
+}
+
+// If a key from an earlier session is still saved, verify it's still valid
+// before showing the dashboard — this also means a rotated/revoked key on
+// the server automatically kicks this page back to the login screen instead
+// of quietly failing every request. Rotates again here too, so reloading the
+// page counts as "logging in" for rotation purposes just like the form does.
+(async function bootAuth() {
+  if (currentAdminKey && await tryUnlock(currentAdminKey)) {
+    const { key: newKey } = await rotateKeyNow(currentAdminKey);
+    currentAdminKey = newKey;
+    sessionStorage.setItem('sk_admin_key', newKey);
+    authed = true;
+    document.getElementById('loginScreen').style.display = 'none';
+    loadAll();
+  } else {
+    sessionStorage.removeItem('sk_admin_key');
+    currentAdminKey = null;
+  }
+})();
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function updateClock(){
+  const now = new Date();
+  document.getElementById('topbarClock').innerText = now.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+const titles = { dashboard:'Dashboard', users:'Users', files:'All Files', folders:'Folders', trash:'Trash', activity:'Activity Log', shares:'Shared Links', broadcast:'Broadcast Update', payments:'Payments' };
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  document.getElementById('topbarTitle').innerText = titles[page] || page;
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'users') renderUsers();
+  if (page === 'files') renderFiles();
+  if (page === 'folders') renderFolders();
+  if (page === 'trash') renderTrash();
+  if (page === 'activity') renderActivity();
+  if (page === 'shares') renderShares();
+  if (page === 'broadcast') renderBroadcast();
+  if (page === 'payments') loadPayments();
+}
+
+// ── API helpers (admin endpoints) ─────────────────────────────────────────────
+async function adminFetch(p, opts = {}) {
+  const r = await fetch(API + p, { ...opts, headers: { ...adminHeaders(), ...(opts.headers || {}) } });
+  if (r.status === 401 || r.status === 403) {
+    // Key was rejected — rotated, revoked, or simply wrong. Force back to
+    // the login screen rather than silently failing every call from here on.
+    doLogout();
+    throw new Error('Admin key rejected by server.');
+  }
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+const adminGet  = p      => adminFetch(p);
+const adminPost = (p, b) => adminFetch(p, { method: 'POST', body: JSON.stringify(b) });
+const adminPut  = (p, b) => adminFetch(p, { method: 'PUT', body: JSON.stringify(b) });
+const adminDel  = p      => adminFetch(p, { method: 'DELETE' });
+
+// ── Data cache ────────────────────────────────────────────────────────────────
+let D = { users:[], files:[], folders:[], trash:[], activity:[], shares:{}, payments:{records:[],summary:{},pricing:{}} };
+
+async function loadAll() {
+  try {
+    // Ping first
+    await fetch(API+'/api/ping');
+    const [users, files, folders, stats] = await Promise.all([
+      adminGet('/api/admin/users'),
+      adminGet('/api/admin/files'),
+      adminGet('/api/admin/folders'),
+      adminGet('/api/admin/stats')
+    ]);
+    D = { ...D, users, files, folders, trash:[], activity:[], shares:{}, stats };
+    updateBadges();
+    updateBackendStatus(true);
+    const cur = document.querySelector('.page.active');
+    if (cur) {
+      const id = cur.id.replace('page-','');
+      if (id === 'dashboard') renderDashboard();
+      else if (id === 'users') renderUsers();
+      else if (id === 'files') renderFiles();
+      else if (id === 'folders') renderFolders();
+      else if (id === 'trash') renderTrash();
+      else if (id === 'activity') renderActivity();
+      else if (id === 'shares') renderShares();
+      else if (id === 'payments') loadPayments();
+    }
+    toast('Data refreshed','ok');
+  } catch(e) {
+    updateBackendStatus(false);
+    toast('Cannot reach backend — is server.js running on port 3006?','err',5000);
+  }
+}
+
+function updateBackendStatus(online) {
+  const dot = document.getElementById('backendDot'), txt = document.getElementById('backendStatus');
+  dot.className = 'dot ' + (online ? 'online' : 'offline');
+  txt.innerText = online ? 'Backend connected (port 3006)' : 'Backend offline';
+}
+
+function updateBadges() {
+  document.getElementById('navBadgeUsers').innerText = D.users.length;
+  document.getElementById('navBadgeFiles').innerText = D.files.length;
+  document.getElementById('navBadgeFolders').innerText = D.folders.length;
+  document.getElementById('navBadgeTrash').innerText = '0';
+  document.getElementById('navBadgePayments').innerText = (D.payments.records||[]).length;
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function fmtBytes(b) {
+  if (!b) return '0 B';
+  const k=1024, s=['B','KB','MB','GB','TB'], i=Math.floor(Math.log(b)/Math.log(k));
+  return parseFloat((b/Math.pow(k,i)).toFixed(2))+' '+s[i];
+}
+function timeAgo(ts) {
+  if (!ts) return '—';
+  const d = Date.now()-ts;
+  if (d < 60000) return 'just now';
+  if (d < 3600000) return Math.floor(d/60000)+'m ago';
+  if (d < 86400000) return Math.floor(d/3600000)+'h ago';
+  return Math.floor(d/86400000)+'d ago';
+}
+function esc(v) { return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function fileIcon(name) {
+  const ext = (name||'').split('.').pop().toLowerCase();
+  const map = {mp4:'🎬',mkv:'🎬',avi:'🎬',mov:'🎬',webm:'🎬',
+                jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',webp:'🖼️',svg:'🖼️',
+                pdf:'📕',doc:'📝',docx:'📝',txt:'📄',md:'📄',
+                zip:'📦',rar:'📦',tar:'📦','7z':'📦',
+                mp3:'🎵',wav:'🎵',flac:'🎵',ogg:'🎵',
+                js:'💻',ts:'💻',py:'💻',html:'💻',css:'💻',json:'💻'};
+  return map[ext] || '📄';
+}
+
+// Real thumbnail (image frame / video frame) with graceful icon fallback.
+// Uses the same public /uploads/<userId>/<file> path previewFile() already relies on.
+function fileThumb(f) {
+  const ext = (f.name||'').split('.').pop().toLowerCase();
+  const url = f.storagePath ? API + f.storagePath : '';
+  const iconFallback = `'<div class=\\'file-thumb-icon\\'>${fileIcon(f.name)}</div>'`;
+  if (url && ['jpg','jpeg','png','gif','webp','svg','bmp'].includes(ext)) {
+    return `<img class="file-thumb" src="${url}" loading="lazy" alt="" onerror="this.outerHTML=${iconFallback}">`;
+  }
+  if (url && ['mp4','webm','mov','mkv'].includes(ext)) {
+    return `<video class="file-thumb" src="${url}#t=0.5" muted preload="metadata" onerror="this.outerHTML=${iconFallback}"></video>`;
+  }
+  return `<div class="file-thumb-icon">${fileIcon(f.name)}</div>`;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok', dur=2500) {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div'); t.className=`toast-item ${type}`;
+  t.innerHTML = (type==='ok'?'✅':'❌')+' '+esc(msg);
+  c.appendChild(t);
+  setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .3s'; setTimeout(()=>t.remove(),300); }, dur);
+}
+
+// ── Modals ────────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function confirm2(title, msg, cb) {
+  document.getElementById('confirmTitle').innerText = title;
+  document.getElementById('confirmMsg').innerText = msg;
+  const btn = document.getElementById('confirmBtn');
+  btn.onclick = () => { closeModal('modalConfirm'); cb(); };
+  document.getElementById('modalConfirm').classList.add('open');
+}
+
+// ── File categorization (shared by Files tabs + dashboard breakdown) ──────────
+function fileCategory(name) {
+  const ext = (name||'').split('.').pop().toLowerCase();
+  if (['mp4','mkv','avi','mov','webm','m4v','flv','wmv','3gp'].includes(ext)) return 'VIDEOS';
+  if (['jpg','jpeg','png','gif','webp','svg','bmp','heic','heif','tiff','ico'].includes(ext)) return 'IMAGES';
+  if (['txt','md','csv','json','log','xml','yaml','yml','ini','conf'].includes(ext)) return 'TEXTS';
+  return 'DOCUMENTS'; // pdf, doc/docx, ppt/xls, zip/rar, audio, code, everything else
+}
+function categoryTotals() {
+  const totals = { VIDEOS:0, IMAGES:0, TEXTS:0, DOCUMENTS:0 };
+  D.files.forEach(f => { totals[fileCategory(f.name)] += (f.byteSize||0); });
+  return totals;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const totalBytes = D.files.reduce((s,f)=>s+(f.byteSize||0),0);
+  const totalLimit = D.users.reduce((s,u)=>s+(u.storageLimitGB||30),0) * 1024**3;
+
+  document.getElementById('ds-users').innerText = D.users.length;
+  document.getElementById('ds-files').innerText = D.files.length;
+  document.getElementById('ds-storage').innerText = fmtBytes(totalBytes);
+  document.getElementById('ds-storage-sub').innerText = totalLimit ? `of ${fmtBytes(totalLimit)} total capacity` : 'Across all accounts';
+  document.getElementById('ds-trash').innerText = D.folders.length;
+
+  // Donut: real per-category breakdown (video/image/text/docs), stacked as arcs
+  const circ = 2 * Math.PI * 42;
+  const cat = categoryTotals();
+  const catTotal = cat.VIDEOS + cat.IMAGES + cat.TEXTS + cat.DOCUMENTS;
+  const segments = [
+    { id:'dc-videos', bar:'sb-videos', val: cat.VIDEOS },
+    { id:'dc-images', bar:'sb-images', val: cat.IMAGES },
+    { id:'dc-texts',  bar:'sb-texts',  val: cat.TEXTS },
+    { id:'dc-docs',   bar:'sb-docs',   val: cat.DOCUMENTS },
+  ];
+  let offset = 0;
+  segments.forEach(seg => {
+    const frac = catTotal > 0 ? seg.val / catTotal : 0;
+    const len = frac * circ;
+    const el = document.getElementById(seg.id);
+    el.style.strokeDasharray = `${len} ${circ - len}`;
+    el.style.strokeDashoffset = `${-offset}`;
+    offset += len;
+    const barEl = document.getElementById(seg.bar);
+    if (barEl) barEl.style.width = (frac*100).toFixed(2) + '%';
+  });
+
+  const usedPct = totalLimit > 0 ? Math.min(totalBytes/totalLimit,1) : 0;
+  document.getElementById('dc-pct').innerText = (usedPct*100).toFixed(0)+'%';
+  document.getElementById('dc-vb').innerText = fmtBytes(cat.VIDEOS);
+  document.getElementById('dc-ib').innerText = fmtBytes(cat.IMAGES);
+  document.getElementById('dc-tb').innerText = fmtBytes(cat.TEXTS);
+  document.getElementById('dc-db').innerText = fmtBytes(cat.DOCUMENTS);
+  document.getElementById('storageTotalUsed').innerText = fmtBytes(totalBytes);
+  document.getElementById('storageTotalCap').innerText = totalLimit ? fmtBytes(totalLimit) : '—';
+
+  // Per-user storage
+  const usl = document.getElementById('userStorageList');
+  if (!D.users.length) { usl.innerHTML='<div class="empty"><div class="emoji">👤</div>No users yet</div>'; }
+  else {
+    usl.innerHTML = D.users.map(u => {
+      const lim = (u.storageLimitGB||30)*1024**3;
+      const pct = Math.min((u.usedBytes/lim)*100,100);
+      return `<div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">
+          <span style="font-weight:600;color:var(--text);">@${esc(u.username)}</span>
+          <span style="color:var(--muted);font-family:'Space Mono',monospace;">${fmtBytes(u.usedBytes)} / ${u.storageLimitGB||30} GB</span>
+        </div>
+        <div class="mini-bar"><div class="mini-fill" style="width:${pct.toFixed(1)}%;"></div></div>
+      </div>`;
+    }).join('');
+  }
+
+  // Recent files as "activity"
+  const da = document.getElementById('dashActivity');
+  const recent = D.files.slice(0,8);
+  if (!recent.length) { da.innerHTML='<div class="empty"><div class="emoji">⚡</div>No files yet</div>'; }
+  else da.innerHTML = recent.map(f => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#60a5fa;box-shadow:0 0 6px #60a5fa;"></div>
+      <div class="activity-text"><strong style="color:var(--primary2);">@${esc(f.ownerUsername)}</strong> uploaded <span style="color:var(--muted);">${esc(f.name)}</span></div>
+      <div class="activity-time">${timeAgo(f.createdAt)}</div>
+    </div>`).join('');
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────────
+let userFilter = '';
+function filterUsers(v) { userFilter = v.toLowerCase(); renderUsers(); }
+function renderUsers() {
+  const tbody = document.getElementById('usersTbody');
+  let list = D.users;
+  if (userFilter) list = list.filter(u => u.username.toLowerCase().includes(userFilter) || u.id.toLowerCase().includes(userFilter));
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="emoji">👤</div>No users found</div></td></tr>`; return; }
+  tbody.innerHTML = list.map((u,i) => {
+    const lim = (u.storageLimitGB||30)*1024**3;
+    const pct = Math.min(((u.usedBytes||0)/lim)*100,100);
+    const pwDisplay = u.password && !u.password.startsWith('(') ? u.password : '—';
+    const usedColor = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--green)';
+    return `<tr>
+      <td class="mono" style="color:var(--muted);">${i+1}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${esc(u.username).slice(0,2).toUpperCase()}</div>
+          <span style="font-weight:600;color:var(--primary2);">@${esc(u.username)}</span>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <code style="background:rgba(255,255,255,.06);padding:3px 8px;border-radius:6px;font-size:12px;font-family:'Space Mono',monospace;color:var(--cyan);letter-spacing:1px;" id="pw-${esc(u.id)}">${pwDisplay !== '—' ? '••••••••' : '—'}</code>
+          ${pwDisplay !== '—' ? `<button onclick="togglePw('${esc(u.id)}','${esc(pwDisplay)}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;" title="Reveal">👁</button>` : ''}
+        </div>
+      </td>
+      <td class="mono" style="font-size:10px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${esc(u.id)}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;">${timeAgo(u.createdAt)}</td>
+      <td class="mono" style="color:var(--primary2);font-size:12px;">${u.fileCount||0} <span style="color:var(--muted);font-size:10px;">files</span></td>
+      <td>
+        <input class="quota-spin" type="number" value="${u.storageLimitGB||30}" min="1" max="2000" onchange="updateQuota('${esc(u.id)}',this.value)" title="Click to change quota">
+        <span style="font-size:10px;color:var(--muted);"> GB</span>
+      </td>
+      <td>
+        <div style="min-width:90px;">
+          <div style="font-size:11px;color:${usedColor};font-family:'Space Mono',monospace;margin-bottom:3px;">${fmtBytes(u.usedBytes||0)}</div>
+          <div class="mini-bar"><div class="mini-fill" style="width:${pct.toFixed(1)}%;background:${usedColor};"></div></div>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px;">${pct.toFixed(1)}% of ${u.storageLimitGB||30} GB</div>
+        </div>
+      </td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="btn btn-success btn-sm" onclick="openStorage('${esc(u.id)}','${esc(u.username)}')">📦 Drive</button>
+          <button class="btn btn-primary btn-sm" onclick="enterUserDrive('${esc(u.id)}','${esc(u.username)}')">🚀 Enter Drive</button>
+          <button class="btn btn-ghost btn-sm" onclick="openResetPw('${esc(u.id)}','${esc(u.username)}')">🔑 Reset PW</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${esc(u.id)}','${esc(u.username)}')">✕ Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// Toggle password visibility
+const pwState = {};
+function togglePw(userId, plain) {
+  const el = document.getElementById('pw-'+userId);
+  if (!el) return;
+  pwState[userId] = !pwState[userId];
+  el.textContent = pwState[userId] ? plain : '••••••••';
+}
+
+// Open user drive in a new tab (admin bypasses login)
+function enterUserDrive(userId, username) {
+  const url = `http://localhost:3006`;
+  // Open main app in new tab with admin-impersonation token hint
+  // Generate a temp token via admin API
+  adminPost('/api/admin/users/'+userId+'/session', {}).then(data => {
+    if (data.token) {
+      const win = window.open('', '_blank');
+      win.document.write(`<script>
+        localStorage.setItem('sk_token','${data.token}');
+        localStorage.setItem('sk_user',JSON.stringify({id:'${userId}',username:'${username}'}));
+        window.location.href='http://localhost:3006/index.html';
+      <\/script>`);
+    } else {
+      toast('Could not generate session token','err');
+    }
+  }).catch(() => toast('Failed to open drive','err'));
+}
+
+function openResetPw(userId, username) {
+  document.getElementById('rpw-name').innerText = username;
+  document.getElementById('rpw-id').value = userId;
+  document.getElementById('rpw-input').value = '';
+  document.getElementById('modalResetPw').classList.add('open');
+  setTimeout(()=>document.getElementById('rpw-input').focus(),80);
+}
+
+async function submitResetPw() {
+  const userId = document.getElementById('rpw-id').value;
+  const pw = document.getElementById('rpw-input').value.trim();
+  if (!pw) { toast('Enter a new password','err'); return; }
+  try {
+    await adminPut(`/api/admin/users/${userId}/password`, { password: pw });
+    closeModal('modalResetPw');
+    await loadAll();
+    toast('Password reset successfully','ok');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function updateQuota(userId, val) {
+  try { await adminPut(`/api/admin/users/${userId}/quota`,{limitGB:+val||30}); toast('Quota updated','ok',1500); await loadAll(); }
+  catch(e) { toast(e.message,'err'); }
+}
+
+function deleteUser(userId, username) {
+  confirm2('Delete User', `Permanently delete @${username} and all their files?`, async () => {
+    try { await adminDel(`/api/admin/users/${userId}`); await loadAll(); renderUsers(); toast(`@${username} deleted`,'ok'); }
+    catch(e) { toast(e.message,'err'); }
+  });
+}
+
+// ── STORAGE BROWSER ──────────────────────────────────────────────────────────
+let storageUserId = null, storageUsername = null;
+let storageAllNodes = [], storageFolderStack = []; // stack of {id, name}
+
+async function openStorage(userId, username) {
+  storageUserId = userId;
+  storageUsername = username;
+  storageFolderStack = [];
+  document.getElementById('storageBrowserUsername').innerText = '@' + username;
+  document.getElementById('modalStorage').classList.add('open');
+  await loadStorageFolder(null);
+}
+
+// Jump straight into a specific folder's contents (used by "Open" on the
+// Folders page and by clicking a folder name on the Files page).
+async function openStorageAtFolder(userId, username, folderId) {
+  storageUserId = userId;
+  storageUsername = username;
+  storageFolderStack = [];
+  document.getElementById('storageBrowserUsername').innerText = '@' + username;
+  document.getElementById('modalStorage').classList.add('open');
+  const tbody = document.getElementById('storageTbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
+  try {
+    const data = await adminGet(`/api/admin/users/${storageUserId}/files`);
+    storageAllNodes = data.nodes || [];
+    // Walk parentFolderId chain to build the breadcrumb path down to this folder
+    const chain = [];
+    let cur = storageAllNodes.find(n => n.id === folderId);
+    while (cur) {
+      chain.unshift({ id: cur.id, name: cur.name });
+      cur = cur.parentFolderId ? storageAllNodes.find(n => n.id === cur.parentFolderId) : null;
+    }
+    storageFolderStack = chain;
+    renderStorageFolder(folderId);
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:20px;">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function loadStorageFolder(parentFolderId) {
+  const tbody = document.getElementById('storageTbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Loading…</td></tr>';
+  try {
+    const data = await adminGet(`/api/admin/users/${storageUserId}/files`);
+    storageAllNodes = data.nodes || [];
+    renderStorageFolder(parentFolderId);
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--red);padding:20px;">${esc(e.message)}</td></tr>`;
+  }
+}
+
+function renderStorageFolder(parentFolderId) {
+  // Breadcrumb
+  const bc = document.getElementById('storageBreadcrumb');
+  let bcHtml = `<span style="cursor:pointer;color:var(--primary2);" onclick="storageFolderStack=[];renderStorageFolder(null)">🏠 Root</span>`;
+  storageFolderStack.forEach((f, i) => {
+    const idx = i;
+    bcHtml += ` <span style="color:var(--muted);">/</span> <span style="cursor:pointer;color:var(--primary2);" onclick="storageFolderStack=storageFolderStack.slice(0,${idx+1});renderStorageFolder('${f.id}')">${esc(f.name)}</span>`;
+  });
+  bc.innerHTML = bcHtml;
+
+  // Stats
+  const totalSize = storageAllNodes.filter(n=>!n.isFolder).reduce((s,n)=>s+(n.byteSize||0),0);
+  document.getElementById('storageBrowserStats').innerText = `${storageAllNodes.filter(n=>!n.isFolder).length} files · ${fmtBytes(totalSize)}`;
+
+  const nodes = storageAllNodes.filter(n => n.parentFolderId === parentFolderId);
+  const folders = nodes.filter(n => n.isFolder).sort((a,b)=>a.name.localeCompare(b.name));
+  const files = nodes.filter(n => !n.isFolder).sort((a,b)=>b.createdAt-a.createdAt);
+
+  const tbody = document.getElementById('storageTbody');
+  if (!nodes.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="emoji">📭</div>Empty folder</div></td></tr>';
+    return;
+  }
+
+  let html = '';
+  // Back row if in subfolder
+  if (storageFolderStack.length > 0) {
+    html += `<tr><td colspan="5" style="cursor:pointer;color:var(--muted);font-size:12px;padding:8px 16px;" onclick="storageFolderStack.pop();renderStorageFolder(${storageFolderStack.length?`'${storageFolderStack[storageFolderStack.length-1].id}'`:'null'})">⬆ ..</td></tr>`;
+  }
+
+  folders.forEach(f => {
+    const childCount = storageAllNodes.filter(n => n.parentFolderId === f.id).length;
+    html += `<tr style="cursor:pointer;" onclick="storageFolderStack.push({id:'${f.id}',name:'${esc(f.name).replace(/'/g,"\\'")}'}); renderStorageFolder('${f.id}')">
+      <td><span style="font-size:16px;margin-right:8px;">📁</span><strong>${esc(f.name)}</strong></td>
+      <td><span class="badge badge-purple">Folder</span></td>
+      <td style="color:var(--muted);">${childCount} item${childCount!==1?'s':''}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;">${timeAgo(f.createdAt)}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();adminDeleteNodeFromStorage('${f.id}','${esc(f.name)}',true,'${parentFolderId||''}')">🗑 Delete</button>
+      </td>
+    </tr>`;
+  });
+
+  files.forEach(f => {
+    const dlUrl = `${API}/api/files/download/${f.id}`;
+    html += `<tr>
+      <td style="display:flex;align-items:center;gap:10px;">${fileThumb(f)}<span>${esc(f.name)}</span></td>
+      <td><span class="badge badge-cyan">File</span></td>
+      <td class="mono" style="font-size:11px;color:var(--muted);">${fmtBytes(f.byteSize)}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;">${timeAgo(f.createdAt)}</td>
+      <td>
+        <div style="display:flex;gap:5px;">
+          <button class="btn btn-danger btn-sm" onclick="adminDeleteNodeFromStorage('${f.id}','${esc(f.name)}',false,'${parentFolderId||''}')">🗑 Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function adminDeleteNodeFromStorage(nodeId, name, isFolder, parentFolderId) {
+  confirm2('Delete Item', `Delete "${name}"?${isFolder?' All contents will also be deleted.':''}`, async () => {
+    try {
+      await adminDel(`/api/admin/files/${storageUserId}/${nodeId}`);
+      // Also remove from local cache
+      storageAllNodes = storageAllNodes.filter(n => n.id !== nodeId);
+      renderStorageFolder(parentFolderId || null);
+      await loadAll();
+      toast(`"${name}" deleted`,'ok');
+    } catch(e) { toast(e.message,'err'); }
+  });
+}
+
+// ── FILES ─────────────────────────────────────────────────────────────────────
+let fileFilter = '', fileCatFilter = 'ALL', fileUserFilterVal = '';
+function filterFiles(v) { fileFilter = v.toLowerCase(); renderFiles(); }
+function setFileFilter(cat, btn) {
+  fileCatFilter = cat;
+  document.querySelectorAll('#page-files .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderFiles();
+}
+function filterFilesByUser(v) { fileUserFilterVal = v; renderFiles(); }
+
+function renderFiles() {
+  const sel = document.getElementById('fileUserFilter');
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">All users</option>' + D.users.map(u=>`<option value="${esc(u.username)}" ${curVal===u.username?'selected':''}>${esc(u.username)}</option>`).join('');
+
+  const tbody = document.getElementById('filesTbody');
+  let list = D.files;
+  if (fileUserFilterVal) list = list.filter(f=>f.ownerUsername===fileUserFilterVal);
+  if (fileCatFilter !== 'ALL') list = list.filter(f=>fileCategory(f.name)===fileCatFilter);
+  if (fileFilter) list = list.filter(f=>f.name.toLowerCase().includes(fileFilter)||(f.ownerUsername||'').includes(fileFilter));
+
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="emoji">📄</div>No files found</div></td></tr>`; return; }
+
+  tbody.innerHTML = list.map(f => {
+    const folder = D.folders.find(x=>x.id===f.parentFolderId);
+    return `<tr>
+      <td>${fileThumb(f)}</td>
+      <td>
+        <div style="font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(f.name)}">${esc(f.name)}</div>
+      </td>
+      <td><span style="color:var(--primary2);font-weight:600;">@${esc(f.ownerUsername||'—')}</span></td>
+      <td style="color:var(--muted);font-size:12px;">${folder?`<span style="cursor:pointer;color:var(--primary2);" onclick="openStorageAtFolder('${esc(f.ownerId)}','${esc(f.ownerUsername)}','${esc(folder.id)}')" title="Open folder">📁 ${esc(folder.name)}</span>`:'Root'}</td>
+      <td class="mono" style="font-size:11px;color:var(--muted);">${fmtBytes(f.byteSize)}</td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="btn btn-danger btn-sm" onclick="adminDeleteFile('${esc(f.id)}','${esc(f.ownerId)}')">🗑 Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function adminDeleteFile(nodeId, ownerId) {
+  const f = D.files.find(x=>x.id===nodeId); if(!f) return;
+  confirm2('Delete File', `Permanently delete "${f.name}"?`, async () => {
+    try { await adminDel(`/api/admin/files/${ownerId}/${nodeId}`); await loadAll(); renderFiles(); toast('File deleted','ok'); }
+    catch(e) { toast(e.message,'err'); }
+  });
+}
+
+// ── PREVIEW ───────────────────────────────────────────────────────────────────
+function previewFile(id) {
+  const f = D.files.find(x=>x.id===id); if(!f) return;
+  const modal = document.getElementById('previewModal');
+  const img = document.getElementById('previewImg');
+  const vid = document.getElementById('previewVideo');
+  document.getElementById('previewName').innerText = f.name;
+  document.getElementById('previewDownload').href = f.storagePath ? API + f.storagePath : '#';
+  document.getElementById('previewDownload').download = f.name;
+  img.style.display = 'none'; vid.style.display = 'none';
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) { img.src = API + (f.storagePath||''); img.style.display = 'block'; }
+  else if (['mp4','webm','mov'].includes(ext)) { vid.src = API + (f.storagePath||''); vid.style.display = 'block'; vid.load(); vid.play().catch(()=>{}); }
+  modal.classList.add('open');
+}
+function closePreview() {
+  document.getElementById('previewModal').classList.remove('open');
+  document.getElementById('previewVideo').pause();
+  document.getElementById('previewVideo').src = '';
+  document.getElementById('previewImg').src = '';
+}
+document.getElementById('previewModal').addEventListener('click', e => { if(e.target.id==='previewModal') closePreview(); });
+
+// ── FOLDERS ───────────────────────────────────────────────────────────────────
+let folderFilter = '';
+function filterFolders(v) { folderFilter = v.toLowerCase(); renderFolders(); }
+function renderFolders() {
+  const tbody = document.getElementById('foldersTbody');
+  let list = D.folders;
+  if (folderFilter) list = list.filter(f=>f.name.toLowerCase().includes(folderFilter)||(f.ownerUsername||'').includes(folderFilter));
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="4"><div class="empty"><div class="emoji">📁</div>No folders found</div></td></tr>`; return; }
+  tbody.innerHTML = list.map(f => {
+    const fileCount = D.files.filter(x=>x.parentFolderId === f.id).length;
+    return `<tr>
+      <td><span style="font-size:18px;margin-right:8px;">📁</span><strong>${esc(f.name)}</strong></td>
+      <td><span style="color:var(--primary2);">@${esc(f.ownerUsername||'—')}</span></td>
+      <td><span class="badge badge-cyan">${fileCount} file${fileCount===1?'':'s'}</span></td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" onclick="openStorageAtFolder('${esc(f.ownerId)}','${esc(f.ownerUsername)}','${esc(f.id)}')">📂 Open</button>
+          <button class="btn btn-danger btn-sm" onclick="adminDeleteFolder('${esc(f.id)}','${esc(f.ownerId)}','${esc(f.name)}')">🗑 Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function adminDeleteFolder(nodeId, ownerId, name) {
+  confirm2('Delete Folder', `Delete folder "${name}" and all its contents?`, async () => {
+    try { await adminDel(`/api/admin/files/${ownerId}/${nodeId}`); await loadAll(); renderFolders(); toast('Folder deleted','ok'); }
+    catch(e) { toast(e.message,'err'); }
+  });
+}
+
+// ── TRASH (not available in this backend) ─────────────────────────────────────
+function renderTrash() {
+  document.getElementById('trashTbody').innerHTML = `<tr><td colspan="6"><div class="empty"><div class="emoji">🗑️</div><div>Trash management is handled in the user app.<br>Files deleted via admin are permanently removed.</div></div></td></tr>`;
+}
+async function emptyAllTrash() { toast('No trash system on this backend','err'); }
+
+// ── ACTIVITY (shows recent uploads as activity) ────────────────────────────────
+let actUserFilter = '';
+function filterActivity(v) { actUserFilter = v; renderActivity(); }
+function renderActivity() {
+  const sel = document.getElementById('activityUserFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All users</option>' + D.users.map(u=>`<option value="${esc(u.username)}" ${cur===u.username?'selected':''}>${esc(u.username)}</option>`).join('');
+
+  const feed = document.getElementById('activityFeed');
+  let list = [...D.files].sort((a,b)=>b.createdAt-a.createdAt);
+  if (actUserFilter) list = list.filter(f=>f.ownerUsername===actUserFilter);
+  if (!list.length) { feed.innerHTML='<div class="empty"><div class="emoji">⚡</div>No activity found</div>'; return; }
+  feed.innerHTML = list.map(f => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:#60a5fa;box-shadow:0 0 6px #60a5fa;"></div>
+      <div class="activity-text">
+        <strong style="color:var(--primary2);">@${esc(f.ownerUsername)}</strong>
+        <span style="color:var(--muted);"> uploaded</span>
+        <span style="color:var(--text);"> — ${esc(f.name)}</span>
+        <span style="color:var(--muted);font-size:11px;"> (${fmtBytes(f.byteSize)})</span>
+      </div>
+      <div class="activity-time">${new Date(f.createdAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false})}</div>
+    </div>`).join('');
+}
+
+// ── SHARES (not implemented in this backend) ───────────────────────────────────
+function renderShares() {
+  document.getElementById('sharesTbody').innerHTML = `<tr><td colspan="5"><div class="empty"><div class="emoji">🔗</div>Share links are managed within the user app.</div></td></tr>`;
+}
+
+// ── BROADCAST UPDATE (push a "new update launched" popup to every visitor) ────
+async function renderBroadcast() {
+  const statusEl = document.getElementById('broadcastStatus');
+  statusEl.innerText = 'Checking current status…';
+  try {
+    const ann = await adminGet('/api/announcement/latest');
+    if (ann && ann.id) {
+      statusEl.innerHTML = `🟢 Live announcement — sent ${new Date(ann.createdAt).toLocaleString()}: “${esc(ann.message)}”`;
+    } else {
+      statusEl.innerText = 'No announcement currently active.';
+    }
+  } catch (e) {
+    statusEl.innerText = 'Could not load current status: ' + e.message;
+  }
+}
+
+async function sendBroadcastUpdate() {
+  const message = document.getElementById('broadcastMsg').value.trim()
+    || 'A new update has been launched. Update now to get the latest version.';
+  confirm2(
+    'Broadcast update to all users?',
+    'Every visitor on the site — logged in or on the login screen — will see a popup and notification prompting them to update now.',
+    async () => {
+      try {
+        await adminPost('/api/admin/broadcast-update', { message });
+        toast('Update notification sent to all users', 'ok');
+        renderBroadcast();
+      } catch (e) { toast(e.message, 'err'); }
+    }
+  );
+}
+
+async function clearBroadcastUpdate() {
+  confirm2(
+    'Retract the current announcement?',
+    'Users who have not yet clicked "Update Now" will stop seeing the popup.',
+    async () => {
+      try {
+        await adminDel('/api/admin/broadcast-update');
+        toast('Announcement retracted', 'ok');
+        renderBroadcast();
+      } catch (e) { toast(e.message, 'err'); }
+    }
+  );
+}
+
+// ── PAYMENTS / PROFIT ──────────────────────────────────────────────────────────
+// rsFmt: format a Rupee amount consistently (e.g. "Rs. 1,234.50")
+function rsFmt(n) {
+  const v = Number(n) || 0;
+  return 'Rs. ' + v.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+}
+
+async function loadPayments() {
+  try {
+    const data = await adminGet('/api/admin/payments');
+    D.payments = data;
+    updateBadges();
+    renderPayments();
+  } catch (e) {
+    toast('Could not load payments: ' + e.message, 'err');
+  }
+}
+
+function renderPayments() {
+  const { records = [], summary = {}, pricing = {} } = D.payments || {};
+
+  // Pricing model card
+  document.getElementById('pm-free').innerText = (pricing.freeStorageGb ?? 10) + ' GB';
+  document.getElementById('pm-price').innerText = `Rs. ${pricing.pricePerGb ?? 5} / GB`;
+  document.getElementById('pm-discount').innerText = (pricing.userDiscountPct ?? 10) + '%';
+  document.getElementById('pm-aff').innerText = (pricing.affiliateCommissionPct ?? 20) + '% of amount paid';
+
+  // Totals
+  document.getElementById('pay-revenue').innerText = rsFmt(summary.totalRevenue);
+  document.getElementById('pay-profit').innerText = rsFmt(summary.totalProfit);
+  document.getElementById('pay-affiliate').innerText = rsFmt(summary.totalAffiliatePaid);
+  document.getElementById('pay-gb').innerText = (summary.totalGbSold || 0).toLocaleString() + ' GB';
+  document.getElementById('pay-discount-sub').innerText = rsFmt(summary.totalDiscountGiven) + ' given in discounts';
+
+  // Table
+  const tbody = document.getElementById('paymentsTbody');
+  if (!records.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="emoji">💳</div>No purchases recorded yet</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = records.map(p => `
+    <tr>
+      <td><span style="color:var(--primary2);font-weight:600;">@${esc(p.username||'—')}</span></td>
+      <td class="mono">${p.gb ?? p.billableGb ?? 0} GB</td>
+      <td class="mono" style="color:var(--muted);">${rsFmt(p.listPrice)}</td>
+      <td class="mono" style="color:var(--amber);">-${rsFmt(p.discount)}</td>
+      <td class="mono" style="color:var(--text);font-weight:600;">${rsFmt(p.amountCharged)}</td>
+      <td>${p.affiliateCode ? `<span class="badge badge-purple">${esc(p.affiliateCode)}</span>` : '<span style="color:var(--muted);">—</span>'}</td>
+      <td class="mono" style="color:var(--accent);">${p.affiliateCut ? rsFmt(p.affiliateCut) : '—'}</td>
+      <td class="mono" style="color:var(--green);font-weight:600;">${rsFmt(p.profit)}</td>
+      <td style="color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;">${timeAgo(p.createdAt)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePayment('${esc(p.id)}')">🗑 Delete</button></td>
+    </tr>`).join('');
+}
+
+function openRecordPurchase() {
+  const sel = document.getElementById('rp-user');
+  sel.innerHTML = D.users.map(u => `<option value="${esc(u.id)}">@${esc(u.username)}</option>`).join('');
+  document.getElementById('rp-gb').value = '';
+  document.getElementById('rp-affcode').value = '';
+  document.getElementById('rp-note').value = '';
+  document.getElementById('rp-preview').style.display = 'none';
+  document.getElementById('modalRecordPurchase').classList.add('open');
+}
+
+// Live-calculates the price/discount/affiliate/profit breakdown as the admin
+// types, using the same pricing constants the backend enforces.
+function updatePurchasePreview() {
+  const gb = parseFloat(document.getElementById('rp-gb').value) || 0;
+  const preview = document.getElementById('rp-preview');
+  if (gb <= 0) { preview.style.display = 'none'; return; }
+  const pricing = (D.payments && D.payments.pricing) || { pricePerGb:5, userDiscountPct:10, affiliateCommissionPct:20 };
+  const affCode = document.getElementById('rp-affcode').value.trim();
+  const listPrice = gb * (pricing.pricePerGb ?? 5);
+  const discount = listPrice * ((pricing.userDiscountPct ?? 10)/100);
+  const amountCharged = listPrice - discount;
+  const affiliateCut = affCode ? amountCharged * ((pricing.affiliateCommissionPct ?? 20)/100) : 0;
+  const profit = amountCharged - affiliateCut;
+  preview.style.display = 'block';
+  preview.innerHTML = `List price ${rsFmt(listPrice)} → discount -${rsFmt(discount)} → user pays <strong style="color:var(--text);">${rsFmt(amountCharged)}</strong>` +
+    (affCode ? ` → affiliate gets ${rsFmt(affiliateCut)} → profit <strong style="color:var(--green);">${rsFmt(profit)}</strong>`
+              : ` → profit <strong style="color:var(--green);">${rsFmt(profit)}</strong> (no affiliate code entered)`);
+}
+document.getElementById('rp-gb').addEventListener('input', updatePurchasePreview);
+document.getElementById('rp-affcode').addEventListener('input', updatePurchasePreview);
+
+async function submitRecordPurchase() {
+  const userId = document.getElementById('rp-user').value;
+  const gb = parseFloat(document.getElementById('rp-gb').value);
+  const affiliateCode = document.getElementById('rp-affcode').value.trim();
+  const note = document.getElementById('rp-note').value.trim();
+  if (!userId) { toast('Select a user', 'err'); return; }
+  if (!gb || gb <= 0) { toast('Enter a positive GB amount', 'err'); return; }
+  try {
+    await adminPost('/api/admin/payments', { userId, gb, affiliateCode: affiliateCode || undefined, note });
+    closeModal('modalRecordPurchase');
+    await loadAll();
+    await loadPayments();
+    toast('Purchase recorded', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+function deletePayment(id) {
+  confirm2('Delete Payment Record', 'This removes it from the ledger. It will not auto-revert the quota bump or affiliate credit.', async () => {
+    try {
+      await adminDel(`/api/admin/payments/${id}`);
+      await loadPayments();
+      toast('Payment record deleted', 'ok');
+    } catch (e) { toast(e.message, 'err'); }
+  });
+}
+
+// ── ADD / EDIT USER ───────────────────────────────────────────────────────────
+async function submitAddUser() {
+  const username = document.getElementById('au-username').value.trim();
+  const password = document.getElementById('au-password').value.trim();
+  const quota    = parseInt(document.getElementById('au-quota').value) || 30;
+  if (!username || !password) { toast('Username and password required','err'); return; }
+  try {
+    await adminPost('/api/admin/users', { username, password, storageLimitGB: quota });
+    closeModal('modalAddUser');
+    ['au-username','au-password'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('au-quota').value = '30';
+    await loadAll();
+    toast(`User @${username} created`,'ok');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+async function submitEditUser() {
+  const usernameOrig = document.getElementById('eu-username-orig').value;
+  const password     = document.getElementById('eu-password').value.trim();
+  const quota        = parseInt(document.getElementById('eu-quota').value) || 30;
+  const user = D.users.find(u => u.username === usernameOrig);
+  if (!user) { toast('User not found','err'); return; }
+  try {
+    if (password) await adminPut(`/api/admin/users/${user.id}/password`, { password });
+    await adminPut(`/api/admin/users/${user.id}/quota`, { limitGB: quota });
+    closeModal('modalEditUser');
+    await loadAll();
+    toast('User updated','ok');
+  } catch(e) { toast(e.message,'err'); }
+}
+
+function openEditUser(userId) {
+  const u = D.users.find(x => x.id === userId); if(!u) return;
+  document.getElementById('eu-name').innerText = u.username;
+  document.getElementById('eu-username-orig').value = u.username;
+  document.getElementById('eu-email').value = '';
+  document.getElementById('eu-password').value = '';
+  document.getElementById('eu-quota').value = u.storageLimitGB || 30;
+  document.getElementById('modalEditUser').classList.add('open');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+if (authed) {
+  loadAll();
+  setInterval(loadAll, 30000);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closePreview();
+    ['modalAddUser','modalEditUser','modalConfirm','modalStorage','modalResetPw','modalRecordPurchase'].forEach(closeModal);
+  }
+});
+</script>
+</body>
+</html>

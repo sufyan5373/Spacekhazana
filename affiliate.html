@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1e1b4b">
+<title>Affiliate Program — SpaceKhazana</title>
+<link rel="icon" type="image/x-icon" href="/icons/favicon.ico">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.383.0/umd/lucide.min.js"></script>
+<style>
+    :root {
+        --bg-dark: #0f0c1b; --bg-card: #ffffff; --primary: #4a3aff; --primary-light: #f0eeff;
+        --text-main: #1e1b4b; --text-muted: #6b7280; --border: #e5e7eb; --accent: #a855f7;
+        --success: #10b981; --danger: #ef4444; --warning: #d97706; --warning-light: #fef3c7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+    html, body { min-height: 100%; width: 100%; overflow-x: hidden; }
+    body { background: #f4f5fb; color: var(--text-main); }
+    body.dark-mode { background: #0f0c1b; color: #e2e0ff; }
+    a { color: inherit; text-decoration: none; }
+
+    header { position: sticky; top: 0; z-index: 20; background: var(--bg-card); border-bottom: 1px solid var(--border); }
+    body.dark-mode header { background: #1e1b35; border-color: #312e60; }
+    .hdr-inner { max-width: 1100px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; }
+    .brand-mark { width: 30px; height: 30px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; color: #fff; }
+    .brand-mark svg { width: 17px; height: 17px; }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
+    .back-link { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--text-muted); padding: 8px 12px; border-radius: 8px; }
+    .back-link:hover { background: var(--primary-light); color: var(--primary); }
+    body.dark-mode .back-link:hover { background: #2a2660; color: #c4b5fd; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-card); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); }
+    body.dark-mode .icon-btn { background: #2a2660; border-color: #312e60; color: #e2e0ff; }
+    .icon-btn svg { width: 17px; height: 17px; }
+    .signout-btn { display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--danger); cursor: pointer; }
+    body.dark-mode .signout-btn { background: #2a2660; border-color: #312e60; }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 60px; }
+    .hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+    .hero-title { font-size: 26px; font-weight: 700; }
+    .hero-sub { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+    .tier-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: var(--primary-light); color: var(--primary); }
+    body.dark-mode .tier-badge { background: #2a2660; color: #c4b5fd; }
+    .tier-badge svg { width: 14px; height: 14px; }
+
+    /* Tier progress */
+    .tier-progress-wrap { margin-bottom: 26px; }
+    .tier-progress-track { height: 8px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: 8px; }
+    body.dark-mode .tier-progress-track { background: #251f47; }
+    .tier-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .4s ease; }
+    .tier-progress-label { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
+    @media (max-width: 720px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; }
+    body.dark-mode .stat-card { background: #1e1b35; border-color: #312e60; }
+    .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; font-weight: 600; }
+    .stat-value { font-size: 24px; font-weight: 700; margin-top: 8px; }
+
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 22px; }
+    body.dark-mode .card { background: #1e1b35; border-color: #312e60; }
+    .card h2 { font-size: 18px; font-weight: 700; }
+    .card p.desc { font-size: 13.5px; color: var(--text-muted); margin-top: 4px; }
+
+    .gen-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .gen-row input, .gen-row select { flex: 1; min-width: 180px; padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--border); font-size: 14px; background: var(--bg-card); color: var(--text-main); }
+    body.dark-mode .gen-row input, body.dark-mode .gen-row select { background: #130f2a; border-color: #312e60; color: #e2e0ff; }
+    .gen-row input:focus, .gen-row select:focus { outline: none; border-color: var(--primary); }
+    .btn-primary { padding: 12px 20px; border-radius: 10px; border: none; background: var(--primary); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
+    .btn-primary:hover { opacity: .92; }
+    .btn-primary:disabled { opacity: .55; cursor: default; }
+    #genError { color: var(--danger); font-size: 13px; margin-top: 8px; display: none; }
+
+    .ticket { margin-top: 20px; border-radius: 14px; border: 1.5px dashed var(--accent); background: var(--primary-light); padding: 18px 20px; display: none; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+    body.dark-mode .ticket { background: #2a2660; }
+    .ticket-label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--accent); }
+    .ticket-link { font-family: monospace; font-size: 15px; margin-top: 4px; word-break: break-all; }
+    .btn-copy { padding: 10px 16px; border-radius: 9px; border: none; background: var(--accent); color: #fff; font-weight: 600; font-size: 13.5px; cursor: pointer; }
+    #copyToast { color: var(--success); font-size: 13px; margin-top: 8px; display: none; font-weight: 600; }
+
+    /* Share row + QR */
+    .share-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .share-btn { display: flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-card); font-size: 13px; font-weight: 600; color: var(--text-main); cursor: pointer; }
+    .share-btn:hover { background: var(--primary-light); }
+    body.dark-mode .share-btn { background: #2a2660; border-color: #312e60; color: #e2e0ff; }
+    .share-btn svg { width: 15px; height: 15px; }
+    .qr-wrap { display: none; margin-top: 16px; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .qr-wrap img { width: 108px; height: 108px; border-radius: 10px; border: 1px solid var(--border); background: #fff; padding: 6px; }
+    .qr-wrap p { font-size: 12.5px; color: var(--text-muted); max-width: 220px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 8px; }
+    th { text-align: left; color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    body.dark-mode th { border-color: #312e60; }
+    td { padding: 12px; border-bottom: 1px solid var(--border); }
+    body.dark-mode td { border-color: #251f47; }
+    tr.you td { background: var(--primary-light); }
+    body.dark-mode tr.you td { background: #241f4a; }
+    .code-pill { font-family: monospace; color: var(--accent); font-weight: 700; }
+    .rev { color: var(--success); font-weight: 700; font-family: monospace; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+
+    /* Status badges */
+    .status-badge { display: inline-flex; align-items: center; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; text-transform: capitalize; }
+    .status-badge.pending  { background: var(--warning-light); color: var(--warning); }
+    .status-badge.paid     { background: #d1fae5; color: var(--success); }
+    .status-badge.rejected { background: #fee2e2; color: var(--danger); }
+    body.dark-mode .status-badge.pending  { background: rgba(217,119,6,.18); }
+    body.dark-mode .status-badge.paid     { background: rgba(16,185,129,.18); }
+    body.dark-mode .status-badge.rejected { background: rgba(239,68,68,.18); }
+
+    /* Activity / tracking feed */
+    .ledger-list { display: flex; flex-direction: column; gap: 2px; margin-top: 14px; }
+    .ledger-row { display: flex; align-items: flex-start; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--border); }
+    body.dark-mode .ledger-row { border-color: #251f47; }
+    .ledger-row:last-child { border-bottom: none; }
+    .ledger-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ledger-icon svg { width: 15px; height: 15px; }
+    .ledger-icon.signup { background: var(--primary-light); color: var(--primary); }
+    .ledger-icon.withdraw_requested { background: var(--warning-light); color: var(--warning); }
+    .ledger-icon.withdraw_paid { background: #d1fae5; color: var(--success); }
+    .ledger-icon.withdraw_rejected { background: #fee2e2; color: var(--danger); }
+    body.dark-mode .ledger-icon.signup { background: #2a2660; }
+    .ledger-body { flex: 1; min-width: 0; }
+    .ledger-text { font-size: 13.5px; }
+    .ledger-time { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .ledger-amount { font-family: monospace; font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+    .ledger-amount.pos { color: var(--success); }
+    .ledger-amount.neg { color: var(--text-muted); }
+
+    .withdraw-history-wrap { margin-top: 20px; }
+
+    /* Two-column layout: main content + sidebar */
+    .layout { display: flex; align-items: flex-start; gap: 22px; }
+    .main-col { flex: 1; min-width: 0; }
+    .sidebar { width: 320px; flex-shrink: 0; position: sticky; top: 78px; }
+    @media (max-width: 900px) {
+        .layout { flex-direction: column; }
+        .sidebar { width: 100%; position: static; }
+    }
+
+    /* Ads board (sidebar) */
+    .ad-form { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+    .ad-form input, .ad-form textarea { padding: 10px 12px; border-radius: 9px; border: 1.5px solid var(--border); font-size: 13.5px; background: var(--bg-card); color: var(--text-main); resize: vertical; }
+    body.dark-mode .ad-form input, body.dark-mode .ad-form textarea { background: #130f2a; border-color: #312e60; color: #e2e0ff; }
+    .ad-form input:focus, .ad-form textarea:focus { outline: none; border-color: var(--primary); }
+    #adError { color: var(--danger); font-size: 12.5px; display: none; }
+    #adToast { color: var(--success); font-size: 12.5px; display: none; font-weight: 600; }
+    .ad-count { font-size: 11.5px; color: var(--text-muted); margin-top: -2px; }
+
+    .ad-list { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; max-height: 520px; overflow-y: auto; }
+    .ad-item { border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+    body.dark-mode .ad-item { border-color: #312e60; }
+    .ad-item.you { border-color: var(--primary); background: var(--primary-light); }
+    body.dark-mode .ad-item.you { background: #241f4a; }
+    .ad-item-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .ad-title { font-weight: 700; font-size: 13.5px; }
+    .ad-title a { color: var(--primary); }
+    .ad-title a:hover { text-decoration: underline; }
+    .ad-note { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+    .ad-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; }
+    .ad-remove { border: none; background: none; color: var(--danger); font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 0; flex-shrink: 0; }
+    .ad-remove:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="hdr-inner">
+        <div class="brand">
+            <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg></div>
+            <span>spacekhazana <span style="color:var(--text-muted); font-weight:400;">/ affiliate</span></span>
+        </div>
+        <div class="hdr-right">
+            <a href="/" class="back-link"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg> Back to Drive</a>
+            <button class="icon-btn" id="darkToggleBtn" onclick="toggleDark()" aria-label="Toggle dark mode">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <button class="signout-btn" onclick="doSignOut()">Sign out</button>
+        </div>
+    </div>
+</header>
+
+<main>
+    <div class="hero-row">
+        <div>
+            <div class="hero-title">Welcome, <span id="greetUser">—</span></div>
+            <div class="hero-sub">Share your link. Every signup earns you a commission.</div>
+        </div>
+        <span class="tier-badge" id="tierBadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg> —</span>
+    </div>
+
+    <div class="tier-progress-wrap">
+        <div class="tier-progress-track"><div class="tier-progress-fill" id="tierProgressFill" style="width:0%;"></div></div>
+        <div class="tier-progress-label" id="tierProgressLabel">—</div>
+    </div>
+
+    <section class="stat-grid" id="statGrid">
+        <div class="stat-card"><div class="stat-label">Total earnings</div><div class="stat-value" id="statEarnings" style="color:var(--primary);">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending payouts</div><div class="stat-value" id="statPending" style="color:var(--accent);">—</div></div>
+        <div class="stat-card"><div class="stat-label">Conversion rate</div><div class="stat-value" id="statConversion" style="color:var(--success);">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total referrals</div><div class="stat-value" id="statReferrals">—</div></div>
+    </section>
+
+    <div class="layout">
+    <div class="main-col">
+
+    <section class="card">
+        <h2>Your referral link</h2>
+        <p class="desc">Claim a custom keyword or use your default code. Anyone who signs up through your link earns you $5.</p>
+        <div class="gen-row">
+            <input id="customKeyword" placeholder="custom keyword (optional) — e.g. NOVA25" maxlength="20">
+            <button class="btn-primary" onclick="generateLink()">Generate link</button>
+        </div>
+        <p id="genError"></p>
+
+        <div class="ticket" id="ticket">
+            <div>
+                <div class="ticket-label">Your link</div>
+                <div class="ticket-link" id="ticketLink"></div>
+            </div>
+            <button class="btn-copy" onclick="copyLink()">Copy</button>
+        </div>
+        <p id="copyToast">Copied to clipboard ✓</p>
+
+        <div class="share-row" id="shareRow" style="display:none;">
+            <button class="share-btn" onclick="shareTo('whatsapp')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.9L4 20l4.2-1.1a7.9 7.9 0 0 0 3.85 1h.01a7.94 7.94 0 0 0 5.54-13.58ZM12.06 18.4h-.01a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.65.67-2.43-.16-.25a6.6 6.6 0 1 1 12.24-3.51 6.55 6.55 0 0 1-6.64 6.6Zm3.6-4.94c-.2-.1-1.16-.57-1.34-.64-.18-.07-.31-.1-.44.1s-.5.63-.62.77-.23.15-.42.05a5.4 5.4 0 0 1-2.69-2.35c-.2-.35.2-.32.58-1.08.06-.13.03-.24-.02-.34s-.44-1.06-.6-1.45c-.16-.38-.32-.33-.44-.33h-.38a.73.73 0 0 0-.53.25 2.2 2.2 0 0 0-.69 1.65 3.85 3.85 0 0 0 .8 2.03 8.8 8.8 0 0 0 3.4 3c.47.2.85.33 1.14.42.48.15.91.13 1.26.08.38-.06 1.16-.47 1.33-.93.16-.45.16-.84.11-.93s-.18-.14-.38-.24Z"/></svg> WhatsApp</button>
+            <button class="share-btn" onclick="shareTo('facebook')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.5-3.89 3.78-3.89 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12Z"/></svg> Facebook</button>
+            <button class="share-btn" onclick="shareTo('twitter')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.57L23.3 22h-6.9l-5.4-7.05L4.8 22H1.6l8.03-9.17L1 2h7.06l4.9 6.46L18.9 2Zm-1.2 18.2h1.9L7.4 3.7H5.36L17.7 20.2Z"/></svg> X</button>
+            <button class="share-btn" onclick="toggleQr()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="17.5" y1="14" x2="17.5" y2="17.5"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg> QR code</button>
+        </div>
+        <div class="qr-wrap" id="qrWrap">
+            <img id="qrImg" alt="QR code for your referral link">
+            <p>Scan to open your referral link — handy for print flyers, stories, or in-person shares.</p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Withdraw earnings</h2>
+        <p class="desc" id="withdrawIntro">Cash out your pending balance via JazzCash or EasyPaisa. Minimum withdrawal $20.</p>
+        <form class="gen-row" id="withdrawForm" onsubmit="submitWithdraw(event)" style="margin-top:16px;">
+            <select id="withdrawMethod">
+                <option value="JazzCash">JazzCash</option>
+                <option value="EasyPaisa">EasyPaisa</option>
+            </select>
+            <input id="withdrawAccount" placeholder="Mobile account — 03XXXXXXXXX" maxlength="11">
+            <input id="withdrawAmount" type="number" min="20" step="1" placeholder="Amount ($)">
+            <button class="btn-primary" type="submit" id="withdrawSubmitBtn">Request withdrawal</button>
+        </form>
+        <p id="withdrawError" style="color:var(--danger); font-size:13px; margin-top:10px; display:none;"></p>
+        <p id="withdrawToast" style="color:var(--success); font-size:13px; margin-top:10px; display:none; font-weight:600;"></p>
+
+        <div class="withdraw-history-wrap" id="withdrawHistoryWrap" style="display:none;">
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead><tr><th>Method</th><th>Account</th><th>Requested</th><th style="text-align:right;">Amount</th><th style="text-align:right;">Status</th></tr></thead>
+                    <tbody id="withdrawTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Activity</h2>
+        <p class="desc">Every commission earned and every withdrawal update, in one place.</p>
+        <div class="ledger-list" id="ledgerList"></div>
+        <div class="empty-state" id="ledgerEmpty" style="display:none;">No activity yet — share your link to get things moving.</div>
+    </section>
+
+    <section class="card">
+        <h2>Affiliate overview</h2>
+        <p class="desc">Top affiliates ranked by revenue generated. Your row is highlighted.</p>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Affiliate</th><th>Code</th><th style="text-align:right;">Clicks</th><th style="text-align:right;">Referrals</th><th style="text-align:right;">Revenue</th></tr></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div class="empty-state" id="tableEmpty" style="display:none;">No affiliates yet — be the first to share your link.</div>
+    </section>
+
+    </div>
+
+    <aside class="sidebar">
+        <section class="card">
+            <h2>Affiliate ads board</h2>
+            <p class="desc">Post a link for other affiliates to see — your referral link, a landing page, a promo banner. Anyone here can click through.</p>
+
+            <form class="ad-form" id="adForm" onsubmit="submitAd(event)">
+                <input id="adTitle" placeholder="Title — e.g. My 30GB free storage link" maxlength="80">
+                <input id="adUrl" placeholder="Link (https://...)" maxlength="500">
+                <textarea id="adNote" placeholder="Short note (optional)" maxlength="200" rows="2"></textarea>
+                <button class="btn-primary" type="submit" id="adSubmitBtn" style="width:100%;">Post ad</button>
+                <p id="adError"></p>
+                <p id="adToast">Posted ✓</p>
+                <p class="ad-count" id="adCount"></p>
+            </form>
+
+            <div class="ad-list" id="adList"></div>
+            <div class="empty-state" id="adEmpty" style="display:none; padding:24px 8px;">No ads yet — be the first to post one.</div>
+        </section>
+    </aside>
+
+    </div>
+</main>
+
+<script>
+const API_HOST = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3006'
+    : window.location.protocol + '//' + window.location.hostname;
+
+const LS_TOKEN = 'spacekhazana_token';
+const LS_USER  = 'spacekhazana_user';
+const LS_DARK  = 'spacekhazana_dark_mode';
+
+const authToken   = localStorage.getItem(LS_TOKEN);
+let   currentUser = JSON.parse(localStorage.getItem(LS_USER) || 'null');
+let   myProfile   = null;
+
+if (!authToken) window.location.href = '/';
+
+function authFetch(url, opts = {}) {
+    opts.headers = { ...(opts.headers || {}), 'x-auth-token': authToken };
+    return fetch(url, opts);
+}
+
+function fmtMoney(n) { return '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtDate(ts) { return ts ? new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+function fmtTimeAgo(ts) {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'moments ago';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+}
+
+// Tier thresholds — referral count needed to reach each tier.
+const TIERS = [
+    { label: 'Bronze tier', min: 0 },
+    { label: 'Silver tier', min: 15 },
+    { label: 'Gold tier', min: 50 },
+];
+function tierFor(referrals) {
+    let current = TIERS[0];
+    for (const t of TIERS) if (referrals >= t.min) current = t;
+    return current;
+}
+function renderTierProgress(referrals) {
+    const idx = TIERS.findIndex(t => t.label === tierFor(referrals).label);
+    const next = TIERS[idx + 1];
+    const fill = document.getElementById('tierProgressFill');
+    const label = document.getElementById('tierProgressLabel');
+    if (!next) {
+        fill.style.width = '100%';
+        label.textContent = `${referrals} referrals — you've reached the top tier 🎉`;
+        return;
+    }
+    const span = next.min - TIERS[idx].min;
+    const into = referrals - TIERS[idx].min;
+    fill.style.width = Math.max(4, Math.min(100, (into / span) * 100)) + '%';
+    label.textContent = `${referrals} of ${next.min} referrals to ${next.label} (${next.min - referrals} to go)`;
+}
+
+async function loadMe() {
+    const res = await authFetch(`${API_HOST}/api/affiliate/me`);
+    if (res.status === 401) { window.location.href = '/'; return; }
+    myProfile = await res.json();
+
+    document.getElementById('greetUser').textContent = myProfile.username || currentUser?.username || 'affiliate';
+    document.getElementById('statEarnings').textContent = fmtMoney(myProfile.earnings);
+    document.getElementById('statPending').textContent = fmtMoney(myProfile.pending);
+    document.getElementById('statConversion').textContent = (myProfile.conversionRate || 0) + '%';
+    document.getElementById('statReferrals').textContent = (myProfile.referrals || 0).toLocaleString();
+
+    const tier = tierFor(myProfile.referrals || 0);
+    document.getElementById('tierBadge').lastChild.textContent = ' ' + tier.label;
+    renderTierProgress(myProfile.referrals || 0);
+
+    // Every affiliate already has a code from the moment their profile was
+    // auto-created server-side, so restore the link/share/QR block from it
+    // on every load — not just right after a fresh "Generate link" click.
+    if (myProfile.code) renderTicket(`${window.location.hostname}/ref?code=${myProfile.code}`);
+}
+
+async function loadOverview() {
+    const res = await authFetch(`${API_HOST}/api/affiliate/overview`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    const body = document.getElementById('tableBody');
+    document.getElementById('tableEmpty').style.display = rows.length ? 'none' : 'block';
+    body.innerHTML = rows.map(r => `
+        <tr class="${r.isYou ? 'you' : ''}">
+            <td>${escapeHtml(r.username)}${r.isYou ? ' <span style="color:var(--primary); font-weight:600;">(you)</span>' : ''}</td>
+            <td class="code-pill">${escapeHtml(r.code)}</td>
+            <td style="text-align:right;">${r.clicks.toLocaleString()}</td>
+            <td style="text-align:right;">${r.referrals.toLocaleString()}</td>
+            <td style="text-align:right;" class="rev">${fmtMoney(r.earnings)}</td>
+        </tr>
+    `).join('');
+}
+
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+async function generateLink() {
+    const keyword = document.getElementById('customKeyword').value.trim();
+    const errEl = document.getElementById('genError');
+    errEl.style.display = 'none';
+
+    let code = myProfile?.code;
+    if (keyword) {
+        const res = await authFetch(`${API_HOST}/api/affiliate/code`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyword })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Could not claim that keyword.'; errEl.style.display = 'block'; return; }
+        code = data.code;
+        myProfile.code = code;
+    }
+
+    renderTicket(`${window.location.hostname}/ref?code=${code}`);
+}
+
+function renderTicket(link) {
+    document.getElementById('ticketLink').textContent = link;
+    document.getElementById('ticket').style.display = 'flex';
+    document.getElementById('ticket').dataset.link = link;
+    document.getElementById('copyToast').style.display = 'none';
+    document.getElementById('shareRow').style.display = 'flex';
+    document.getElementById('qrWrap').style.display = 'none';
+}
+
+function copyLink() {
+    const link = 'https://' + document.getElementById('ticket').dataset.link;
+    const done = () => {
+        const toast = document.getElementById('copyToast');
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 2000);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(done).catch(() => fallbackCopy(link, done));
+    } else {
+        fallbackCopy(link, done);
+    }
+}
+function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch {}
+    document.body.removeChild(ta);
+}
+
+function shareTo(platform) {
+    const link = 'https://' + (document.getElementById('ticket').dataset.link || '');
+    const text = encodeURIComponent('Get 30GB free personal cloud storage on SpaceKhazana — join with my link:');
+    const url = encodeURIComponent(link);
+    const urls = {
+        whatsapp: `https://wa.me/?text=${text}%20${url}`,
+        facebook: `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+        twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+    };
+    if (urls[platform]) window.open(urls[platform], '_blank', 'noopener,noreferrer');
+}
+
+function toggleQr() {
+    const link = 'https://' + (document.getElementById('ticket').dataset.link || '');
+    const wrap = document.getElementById('qrWrap');
+    const showing = wrap.style.display === 'flex';
+    if (showing) { wrap.style.display = 'none'; return; }
+    document.getElementById('qrImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
+    wrap.style.display = 'flex';
+}
+
+/* ---------- Withdrawals ---------- */
+async function loadWithdrawals() {
+    const res = await authFetch(`${API_HOST}/api/affiliate/withdrawals`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    const wrap = document.getElementById('withdrawHistoryWrap');
+    wrap.style.display = rows.length ? 'block' : 'none';
+    document.getElementById('withdrawTableBody').innerHTML = rows.map(w => `
+        <tr>
+            <td>${escapeHtml(w.method)}</td>
+            <td class="code-pill">${escapeHtml(w.account)}</td>
+            <td>${fmtDate(w.requestedAt)}</td>
+            <td style="text-align:right;" class="rev">${fmtMoney(w.amount)}</td>
+            <td style="text-align:right;"><span class="status-badge ${w.status}">${w.status}</span></td>
+        </tr>
+    `).join('');
+}
+
+async function submitWithdraw(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('withdrawError');
+    const toastEl = document.getElementById('withdrawToast');
+    errEl.style.display = 'none';
+    toastEl.style.display = 'none';
+
+    const method = document.getElementById('withdrawMethod').value;
+    const account = document.getElementById('withdrawAccount').value.trim();
+    const amount = Number(document.getElementById('withdrawAmount').value);
+    const btn = document.getElementById('withdrawSubmitBtn');
+
+    btn.disabled = true;
+    try {
+        const res = await authFetch(`${API_HOST}/api/affiliate/withdraw`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ method, account, amount })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            errEl.textContent = data.error || 'Could not submit withdrawal request.';
+            errEl.style.display = 'block';
+            return;
+        }
+        document.getElementById('withdrawForm').reset();
+        toastEl.textContent = `Withdrawal of ${fmtMoney(amount)} via ${method} requested — pending review.`;
+        toastEl.style.display = 'block';
+        if (myProfile) myProfile.pending = data.pending;
+        document.getElementById('statPending').textContent = fmtMoney(data.pending);
+        await loadWithdrawals();
+        await loadLedger();
+    } catch {
+        errEl.textContent = 'Network error — please try again.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+/* ---------- Activity / tracking ledger ---------- */
+const LEDGER_ICON = {
+    signup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>',
+    withdraw_requested: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg>',
+    withdraw_paid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    withdraw_rejected: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+};
+const LEDGER_TEXT = {
+    signup: (l) => `Earned ${fmtMoney(l.amount)} commission — ${escapeHtml(l.note || 'new referral signed up')}`,
+    withdraw_requested: (l) => `Withdrawal requested — ${escapeHtml(l.note || '')}`,
+    withdraw_paid: (l) => `Withdrawal paid — ${escapeHtml(l.note || '')}`,
+    withdraw_rejected: (l) => `Withdrawal rejected — ${escapeHtml(l.note || 'refunded to your pending balance')}`,
+};
+async function loadLedger() {
+    const res = await authFetch(`${API_HOST}/api/affiliate/ledger`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    document.getElementById('ledgerEmpty').style.display = rows.length ? 'none' : 'block';
+    document.getElementById('ledgerList').innerHTML = rows.map(l => {
+        const isCredit = l.type === 'signup' || l.type === 'withdraw_rejected';
+        return `
+        <div class="ledger-row">
+            <div class="ledger-icon ${l.type}">${LEDGER_ICON[l.type] || ''}</div>
+            <div class="ledger-body">
+                <div class="ledger-text">${(LEDGER_TEXT[l.type] || (() => 'Activity'))(l)}</div>
+                <div class="ledger-time">${fmtTimeAgo(l.createdAt)}</div>
+            </div>
+            <div class="ledger-amount ${isCredit ? 'pos' : 'neg'}">${isCredit ? '+' : '−'}${fmtMoney(l.amount)}</div>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- Ads board ---------- */
+const AD_MAX_PER_USER = 5;
+
+function timeAgoAndDate(ts) {
+    return `${fmtTimeAgo(ts)} · ${fmtDate(ts)}`;
+}
+
+async function loadAds() {
+    const res = await authFetch(`${API_HOST}/api/affiliate/ads`);
+    if (!res.ok) return;
+    const rows = await res.json();
+    document.getElementById('adEmpty').style.display = rows.length ? 'none' : 'block';
+
+    const mine = rows.filter(a => a.isYou).length;
+    document.getElementById('adCount').textContent = `${mine} of ${AD_MAX_PER_USER} ad slots used`;
+
+    document.getElementById('adList').innerHTML = rows.map(a => `
+        <div class="ad-item ${a.isYou ? 'you' : ''}">
+            <div class="ad-item-top">
+                <div class="ad-title"><a href="${escapeHtml(a.url)}" target="_blank" rel="noopener noreferrer nofollow">${escapeHtml(a.title)}</a></div>
+                ${a.isYou ? `<button class="ad-remove" onclick="deleteAd('${a.id}')">Remove</button>` : ''}
+            </div>
+            ${a.note ? `<div class="ad-note">${escapeHtml(a.note)}</div>` : ''}
+            <div class="ad-meta">
+                <span>${a.isYou ? 'You' : escapeHtml(a.username)}</span>
+                <span>${timeAgoAndDate(a.createdAt)}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function submitAd(e) {
+    e.preventDefault();
+    const errEl = document.getElementById('adError');
+    const toastEl = document.getElementById('adToast');
+    errEl.style.display = 'none';
+    toastEl.style.display = 'none';
+
+    const title = document.getElementById('adTitle').value.trim();
+    const url = document.getElementById('adUrl').value.trim();
+    const note = document.getElementById('adNote').value.trim();
+    const btn = document.getElementById('adSubmitBtn');
+
+    btn.disabled = true;
+    try {
+        const res = await authFetch(`${API_HOST}/api/affiliate/ads`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, url, note })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            errEl.textContent = data.error || 'Could not post that ad.';
+            errEl.style.display = 'block';
+            return;
+        }
+        document.getElementById('adForm').reset();
+        toastEl.style.display = 'block';
+        setTimeout(() => toastEl.style.display = 'none', 2000);
+        await loadAds();
+    } catch {
+        errEl.textContent = 'Network error — please try again.';
+        errEl.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function deleteAd(id) {
+    try {
+        const res = await authFetch(`${API_HOST}/api/affiliate/ads/${id}`, { method: 'DELETE' });
+        if (res.ok) await loadAds();
+    } catch {}
+}
+
+function toggleDark() {
+    const on = !document.body.classList.contains('dark-mode');
+    document.body.classList.toggle('dark-mode', on);
+    localStorage.setItem(LS_DARK, on ? '1' : '0');
+}
+if (localStorage.getItem(LS_DARK) === '1') document.body.classList.add('dark-mode');
+
+async function doSignOut() {
+    try { await authFetch(`${API_HOST}/api/auth/logout`, { method: 'POST' }); } catch {}
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_USER);
+    window.location.href = '/';
+}
+
+(async function init() {
+    if (window.lucide) lucide.createIcons();
+    await loadMe();
+    await Promise.all([loadOverview(), loadWithdrawals(), loadLedger(), loadAds()]);
+})();
+</script>
+</body>
+</html>

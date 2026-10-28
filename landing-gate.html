@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verified — SpaceKhazana</title>
+<style>
+    :root {
+        --sk-bg: #0b0d12;
+        --sk-card: #12151c;
+        --sk-border: #232732;
+        --sk-accent: #4f7cff;
+        --sk-accent-soft: rgba(79, 124, 255, 0.12);
+        --sk-green: #2ecc71;
+        --sk-text: #e8eaf0;
+        --sk-text-dim: #8a90a2;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle at 50% 0%, #161a24 0%, var(--sk-bg) 60%);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: var(--sk-text);
+        padding: 24px;
+    }
+    .card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--sk-card);
+        border: 1px solid var(--sk-border);
+        border-radius: 16px;
+        padding: 40px 32px;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    .check-badge {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 20px;
+        border-radius: 50%;
+        background: rgba(46, 204, 113, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .check-badge svg { width: 32px; height: 32px; }
+    h1 {
+        font-size: 20px;
+        margin: 0 0 6px;
+        font-weight: 600;
+    }
+    .status-line {
+        color: var(--sk-green);
+        font-size: 14px;
+        font-weight: 500;
+        margin: 0 0 4px;
+    }
+    .google-email {
+        color: var(--sk-text-dim);
+        font-size: 13px;
+        margin: 0 0 28px;
+        word-break: break-all;
+    }
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 14px 20px;
+        background: var(--sk-accent);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn-primary:hover { background: #3f68e0; }
+    .btn-primary:active { transform: scale(0.98); }
+    .fine-print {
+        margin-top: 18px;
+        font-size: 12px;
+        color: var(--sk-text-dim);
+        line-height: 1.5;
+    }
+    .fine-print a { color: var(--sk-accent); text-decoration: none; }
+</style>
+</head>
+<body>
+    <div class="card">
+        <div class="check-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"></path>
+            </svg>
+        </div>
+        <h1>Google Account Verified</h1>
+        <p class="status-line">Your Google identity has been confirmed</p>
+        <p class="google-email" id="verifiedEmail"></p>
+
+        <button class="btn-primary" id="enterDriveBtn">Enter SpaceKhazana Drive Login</button>
+
+        <p class="fine-print">
+            This Google account will be checked against the SpaceKhazana
+            account you sign into next. Signing into an account linked to a
+            different Gmail may limit some features.
+        </p>
+    </div>
+
+    <script>
+        // Purely cosmetic — shows which Gmail was just verified, if the
+        // /api/auth/google response is passed along via sessionStorage.
+        // Safe to leave blank if not present.
+        (function showVerifiedEmail() {
+            const email = sessionStorage.getItem('sk_verified_google_email');
+            const el = document.getElementById('verifiedEmail');
+            if (email) el.textContent = email;
+            else el.remove();
+        })();
+
+        document.getElementById('enterDriveBtn').addEventListener('click', function () {
+            window.location.href = '/drive-login.html';
+        });
+    </script>
+</body>
+</html>
