@@ -863,15 +863,25 @@ app.use((req, res, next) => {
         res.header('Access-Control-Allow-Credentials', 'true');
     }
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, x-auth-token, x-admin-key, Authorization');
+    // x-device-id is sent on login/register; without it the cross-origin preflight fails
+    // and the browser reports a bare network error. Any extra requested header from an
+    // allow-listed origin is echoed back so new custom headers never break the preflight.
+    const reqHdrs = req.headers['access-control-request-headers'];
+    res.header('Access-Control-Allow-Headers',
+        'Origin, X-Requested-With, Content-Type, Accept, x-auth-token, x-admin-key, x-device-id, Authorization'
+        + ((origin && ALLOWED_ORIGINS.has(origin) && reqHdrs) ? ', ' + reqHdrs : ''));
     // Lets the PDF viewer (pdf.js) see Content-Range / Content-Length /
     // Accept-Ranges on cross-origin requests so it can stream big PDFs page
     // by page instead of downloading the whole file first.
     res.header('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
     res.header('Access-Control-Max-Age', '86400');
+    if (origin && !ALLOWED_ORIGINS.has(origin) && !req.path.startsWith('/api/admin/') && req.path.startsWith('/api/')) {
+        console.warn('[CORS] blocked origin:', origin, '- add it to FRONTEND_ORIGINS');
+    }
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
 });
+console.log('[CORS] allowed origins:', [...ALLOWED_ORIGINS].join(', '));
 app.use(express.json({ limit: '2mb' }));
 
 // ─── SECURITY: rate limiting ─────────────────────────────────────────────
