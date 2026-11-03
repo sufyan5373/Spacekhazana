@@ -10,9 +10,14 @@
      pings and third-party origins always go straight to the network.
 */
 
-const VERSION = 'v35';
+const VERSION = 'v36';
 const SHELL_CACHE = `sk-shell-${VERSION}`;
 const RUNTIME_CACHE = `sk-runtime-${VERSION}`;
+// Thumbnails live in their own cache that survives version bumps, so they
+// are not re-downloaded after every deploy.
+const THUMB_CACHE = 'sk-thumbs-v1';
+const THUMB_MAX = 600;                       // entries kept
+const THUMB_REVALIDATE_MS = 7 * 24 * 3600e3; // refresh in the background after a week
 
 // Backend on Render (must match PROD_API_HOST in index.html). Frontend is on
 // Vercel, so API calls are cross-origin and need to be recognised here.
@@ -79,7 +84,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k.startsWith('sk-') && k !== SHELL_CACHE && k !== RUNTIME_CACHE)
+          .filter((k) => k.startsWith('sk-') && k !== SHELL_CACHE && k !== RUNTIME_CACHE && k !== THUMB_CACHE)
           .map((k) => caches.delete(k))
       )
     ).then(() => self.clients.claim())
@@ -89,7 +94,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') self.skipWaiting();
   // Lets the page wipe the per-user API cache on demand.
-  if (event.data === 'clearRuntime') event.waitUntil(caches.delete(RUNTIME_CACHE));
+  if (event.data === 'clearRuntime') event.waitUntil(Promise.all([caches.delete(RUNTIME_CACHE), caches.delete(THUMB_CACHE)]));
 });
 
 /* ───────────── helpers ───────────── */
@@ -106,7 +111,6 @@ function isCacheableApi(url) {
   if (p.startsWith('/api/manual-payments/')) return false; // payment status must be live
   if (p.startsWith('/api/admin/')) return false;         // admin data + CNIC images: never cache
   if (p === '/api/ping') return false;                   // must reflect the real connection
-  if (p.startsWith('/api/khazana-hole/')) return false;  // live search / job progress
   if (p.startsWith('/api/files/download')) return false; // big binary downloads
   return true;
 }
@@ -171,6 +175,56 @@ async function cacheFirst(event, request, cacheName, options = {}) {
   return fresh;
 }
 
+function isThumbRequest(url) {
+  return /\/api\/(files|trash)\/thumbnail\//.test(url.pathname);
+}
+
+// Thumbnails: cache-first. Served instantly from disk, never waiting on the
+// (sometimes sleepy) server. The auth token is stripped from the cache key so
+// a new login still hits the same entries.
+async function thumbCacheFirst(event, request, url) {
+  const cache = await caches.open(THUMB_CACHE);
+  const key = new Request(url.origin + url.pathname);
+  const cached = await cache.match(key);
+
+  const fetchAndStore = async () => {
+    // A CORS fetch gives a readable (cacheable) response; an <img> request
+    // alone would be opaque and is not worth caching.
+    const fresh = await fetch(url.href, { mode: 'cors', credentials: 'omit' });
+    if (fresh && fresh.ok && fresh.status === 200 && /^image\//i.test(fresh.headers.get('content-type') || '')) {
+      const headers = new Headers(fresh.headers);
+      headers.set('x-sk-at', String(Date.now()));
+      const body = await fresh.clone().blob();
+      await cache.put(key, new Response(body, { status: 200, headers }));
+      trimThumbs(cache);
+    }
+    return fresh;
+  };
+
+  if (cached) {
+    const at = Number(cached.headers.get('x-sk-at') || 0);
+    if (Date.now() - at > THUMB_REVALIDATE_MS) event.waitUntil(fetchAndStore().catch(() => {}));
+    return cached;
+  }
+  try {
+    return await fetchAndStore();
+  } catch (e) {
+    return fetch(request); // CORS refused or offline: behave like a normal image load
+  }
+}
+
+let _trimming = false;
+async function trimThumbs(cache) {
+  if (_trimming) return;
+  _trimming = true;
+  try {
+    const keys = await cache.keys();
+    if (keys.length > THUMB_MAX) {
+      for (const k of keys.slice(0, keys.length - THUMB_MAX + 50)) await cache.delete(k);
+    }
+  } catch (e) { /* ignore */ } finally { _trimming = false; }
+}
+
 /* ───────────── fetch ───────────── */
 
 self.addEventListener('fetch', (event) => {
@@ -205,6 +259,11 @@ self.addEventListener('fetch', (event) => {
         return hit || Response.error();
       })
     );
+    return;
+  }
+
+  if ((sameOrigin || isApiOrigin) && isThumbRequest(url)) {
+    event.respondWith(thumbCacheFirst(event, request, url));
     return;
   }
 
