@@ -154,13 +154,22 @@ function safeFileName(artist, title) {
   return (base || 'track') + '.mp3';
 }
 
+// Filled in by the router so error messages can say what is actually wrong.
+const cookieState = { mode: 'none', youtubeLines: 0, loggedIn: false, error: '' };
+
 /** Maps yt-dlp's stderr to a message a person can act on. */
 function friendlyYtError(stderr) {
   const line = (String(stderr).split('\n').filter((l) => /ERROR/.test(l)).pop() || '').replace(/^.*?ERROR:\s*(?:\[[^\]]+\]\s*[\w-]*:\s*)?/, '');
   const l = line.toLowerCase();
   if (/private video/.test(l)) return { code: 'private', message: 'That video is private.' };
   if (/sign in to confirm your age|age[- ]restricted|inappropriate for some users/.test(l)) return { code: 'age', message: 'That video is age-restricted and can\'t be fetched without a signed-in session.' };
-  if (/sign in to confirm you.?re not a bot|confirm you.?re not a bot/.test(l)) return { code: 'bot_check', message: 'YouTube is asking this server to prove it\'s not a bot. Add fresh YouTube cookies on the server (KH_COOKIES_B64 or KH_COOKIES_FILE; KH_COOKIES_BROWSER on a PC) and retry.' };
+  if (/sign in to confirm you.?re not a bot|confirm you.?re not a bot/.test(l)) {
+    let m;
+    if (cookieState.mode === 'none') m = 'YouTube is asking this server to prove it\'s not a bot, and no cookies are loaded on the server. Check /etc/secrets has your cookies .txt (or set KH_COOKIES_B64), redeploy, and see /api/khazana-hole/health.';
+    else if (!cookieState.loggedIn) m = 'Cookies are loaded but they are not a logged-in YouTube session. Re-export cookies.txt while logged in (private window) and replace the secret file.';
+    else m = 'Cookies are loaded but YouTube still blocks this server. Re-export fresh cookies (private window, close it right after); if it keeps happening, Render\'s IP is blocked and the backend must run on your PC.';
+    return { code: 'bot_check', message: m };
+  }
   if (/not available in your country|blocked it in your country|geo/.test(l)) return { code: 'geo', message: 'That video isn\'t available in the server\'s region.' };
   if (/copyright|blocked it on copyright/.test(l)) return { code: 'copyright', message: 'That video is blocked for copyright reasons.' };
   if (/video unavailable|this video is not available|has been removed|account.*terminated|does not exist/.test(l)) return { code: 'unavailable', message: 'That video is unavailable or has been removed.' };
@@ -207,19 +216,38 @@ module.exports = function createKhazanaHole(options = {}) {
   //   KH_COOKIES_BROWSER  chrome / edge / firefox (only works where that browser is installed, e.g. your PC)
   // yt-dlp rewrites its cookie file, and Render secret files are read-only, so the
   // cookies are always copied to a writable temp file first.
+  // No env var needed on Render: any *cookie*.txt in /etc/secrets (or the app root) is picked up,
+  // whatever it is called (e.g. www.youtube.com_cookies.txt).
+  const findSecretCookies = () => {
+    for (const dir of ['/etc/secrets', process.cwd()]) {
+      try {
+        const f = fs.readdirSync(dir).find((n) => /cookie/i.test(n) && /\.txt$/i.test(n));
+        if (f) return path.join(dir, f);
+      } catch { /* dir missing */ }
+    }
+    return '';
+  };
   let COOKIES_FILE = '';
   try {
     const dest = path.join(os.tmpdir(), 'kh-cookies.txt');
     if (process.env.KH_COOKIES_B64) {
       fs.writeFileSync(dest, Buffer.from(process.env.KH_COOKIES_B64.replace(/\s+/g, ''), 'base64'), { mode: 0o600 });
       COOKIES_FILE = dest;
-    } else if (process.env.KH_COOKIES_FILE) {
-      fs.copyFileSync(process.env.KH_COOKIES_FILE, dest);
+    } else if (process.env.KH_COOKIES_FILE || findSecretCookies()) {
+      fs.copyFileSync(process.env.KH_COOKIES_FILE || findSecretCookies(), dest);
       try { fs.chmodSync(dest, 0o600); } catch { /* windows */ }
       COOKIES_FILE = dest;
     }
-    if (COOKIES_FILE) console.log('[khazana-hole] using YouTube cookies file');
+    if (COOKIES_FILE) {
+      cookieState.mode = 'file';
+      const txt = fs.readFileSync(COOKIES_FILE, 'utf8');
+      const rows = txt.split(/\r?\n/).filter((x) => x && !x.startsWith('#') || x.startsWith('#HttpOnly_'));
+      cookieState.youtubeLines = rows.filter((x) => /youtube\.com|google\.com/i.test(x)).length;
+      cookieState.loggedIn = /\t(SAPISID|__Secure-3PSID|LOGIN_INFO)\t/.test(txt);
+      console.log('[khazana-hole] using YouTube cookies file:', cookieState.youtubeLines, 'cookies, logged in:', cookieState.loggedIn);
+    }
   } catch (e) {
+    cookieState.error = e.message;
     console.log('[khazana-hole] could not load cookies:', e.message);
   }
 
@@ -308,6 +336,8 @@ module.exports = function createKhazanaHole(options = {}) {
       });
     });
   }
+
+  if (!COOKIES_FILE && COOKIES_BROWSER) cookieState.mode = 'browser';
 
   function ytBaseArgs() {
     // Recent yt-dlp needs a JS runtime to solve YouTube's signature challenge;
@@ -616,6 +646,7 @@ module.exports = function createKhazanaHole(options = {}) {
       ytdlp: !!eng.yt, ytdlpVersion: eng.ytVersion || null,
       ffmpeg: !!eng.ffmpeg,
       serverSave: typeof saveToStorage === 'function',
+      cookies: { ...cookieState },
       note: eng.note || null
     });
   }));
