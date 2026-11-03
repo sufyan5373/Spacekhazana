@@ -5,6 +5,8 @@
 
 // Load .env (R2 keys, ports, etc.) before anything reads process.env
 try { require('dotenv').config(); } catch (e) { console.warn('[env] dotenv not installed (npm install dotenv) - .env was NOT loaded'); }
+// Cloudflare R2 is the single source of truth: restore app data from R2 now, mirror all writes back.
+require('./r2-datastore');
 
 const express    = require('express');
 const cors       = require('cors');
@@ -3197,7 +3199,7 @@ app.get('/api/music/browse/download/:ownerId/:trackId', requireAuth, (req, res) 
 // Copy a published track into the current user's own Music library (a
 // dedicated "⬇️ From Browse" album), so it shows up and plays alongside
 // their own uploads. Counts against their storage quota like any upload.
-app.post('/api/music/browse/save/:ownerId/:trackId', requireAuth, (req, res) => {
+app.post('/api/music/browse/save/:ownerId/:trackId', requireAuth, async (req, res) => {
     const ownerNodes = readUserNodes(req.params.ownerId);
     const track = ownerNodes.find(n => n.id === req.params.trackId && !n.isFolder && n.publicToBrowse);
     if (!track) return res.status(404).json({ error: 'Track not found or no longer public.' });
@@ -3208,9 +3210,10 @@ app.post('/api/music/browse/save/:ownerId/:trackId', requireAuth, (req, res) => 
         return res.status(413).json({ error: 'Storage limit reached. Free up space before saving this track.' });
     }
 
-    const srcAbs = resolveLocalUploadPath(track.storagePath);
-    if (!srcAbs || !fs.existsSync(srcAbs)) {
-        return res.status(502).json({ error: "Could not read the source file (cloud-stored tracks aren't supported for saving yet)." });
+    const isCloudTrack = track.storageProvider === 's3' && !!track.storageKey;
+    const srcAbs = isCloudTrack ? null : resolveLocalUploadPath(track.storagePath);
+    if (!isCloudTrack && (!srcAbs || !fs.existsSync(srcAbs))) {
+        return res.status(502).json({ error: 'Could not read the source file.' });
     }
 
     const allNodes = readUserNodes(req.userId);
@@ -3232,10 +3235,30 @@ app.post('/api/music/browse/save/:ownerId/:trackId', requireAuth, (req, res) => 
 
     const users = readUsers();
     const ownerUser = users.find(u => u.id === req.params.ownerId);
-    const filename = `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${path.basename(srcAbs)}`;
-    const destDir = path.join(UPLOADS_DIR, req.userId);
-    fs.mkdirSync(destDir, { recursive: true });
-    fs.copyFileSync(srcAbs, path.join(destDir, filename));
+    let storageFields;
+    if (isCloudTrack) {
+        // Server-side copy inside R2: no download, no local disk.
+        const { CopyObjectCommand } = require('@aws-sdk/client-s3');
+        const cfg = getS3Config();
+        const newKey = createObjectKey(req.userId, track.name || 'track');
+        try {
+            await r2Client().send(new CopyObjectCommand({
+                Bucket: cfg.bucket,
+                CopySource: encodeURIComponent(`${cfg.bucket}/${track.storageKey}`).replace(/%2F/g, '/'),
+                Key: newKey
+            }));
+        } catch (e) {
+            console.error('[R2] browse save copy failed:', e.message);
+            return res.status(502).json({ error: 'Could not copy the track in cloud storage.' });
+        }
+        storageFields = { storagePath: track.storagePath, storageProvider: 's3', storageKey: newKey };
+    } else {
+        const filename = `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}_${path.basename(srcAbs)}`;
+        const destDir = path.join(UPLOADS_DIR, req.userId);
+        fs.mkdirSync(destDir, { recursive: true });
+        fs.copyFileSync(srcAbs, path.join(destDir, filename));
+        storageFields = { storagePath: `/uploads/${req.userId}/${filename}` };
+    }
 
     const copy = {
         id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -3244,7 +3267,7 @@ app.post('/api/music/browse/save/:ownerId/:trackId', requireAuth, (req, res) => 
         parentFolderId: album.id,
         fileType: track.fileType || null,
         byteSize: track.byteSize || 0,
-        storagePath: `/uploads/${req.userId}/${filename}`,
+        ...storageFields,
         createdAt: Date.now(),
         browsedFrom: ownerUser?.username || null
     };
