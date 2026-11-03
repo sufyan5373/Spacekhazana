@@ -176,7 +176,7 @@ function friendlyYtError(stderr) {
   if (/members-only|join this channel/.test(l)) return { code: 'members', message: 'That video is members-only.' };
   if (/premieres in|live event will begin/.test(l)) return { code: 'upcoming', message: 'That video hasn\'t premiered yet.' };
   if (/page needs to be reloaded/.test(l)) return { code: 'stale_session', message: 'YouTube rejected the session. Update yt-dlp (nightly) or re-export fresh cookies, then retry.' };
-  if (/requested format is not available/.test(l)) return { code: 'format', message: 'No downloadable audio was found for that video.' };
+  if (/requested format is not available/.test(l)) return { code: 'format', message: 'No downloadable audio was found. The server\'s yt-dlp is probably outdated or missing its JS challenge solver: update yt-dlp (use the standalone binary) and check the server log.' };
   if (/larger than max-filesize|file is larger/.test(l)) return { code: 'too_big', message: 'That video is too large to convert.' };
   if (/unable to download|timed out|temporary failure|network|connection/.test(l)) return { code: 'network', message: 'Network problem while talking to YouTube. Try again in a moment.' };
   return { code: 'ytdlp', message: (line || 'Could not fetch that video.').slice(0, 200) };
@@ -343,8 +343,15 @@ module.exports = function createKhazanaHole(options = {}) {
     // Recent yt-dlp needs a JS runtime to solve YouTube's signature challenge;
     // without one only storyboards are offered ("requested format is not available").
     // The server already runs on Node, so reuse that exact binary.
-    const a = ['--no-warnings', '--no-playlist', '--socket-timeout', '20',
+    // Warnings are kept (they go to stderr, which is only logged) so the server log shows
+    // WHY formats are missing, e.g. "n challenge solving failed".
+    const a = ['--no-playlist', '--socket-timeout', '20',
                '--js-runtimes', 'node:' + process.execPath];
+    // The signature/n-challenge solver scripts (yt-dlp-ejs) are bundled in the standalone
+    // yt-dlp binary but NOT in pip/apt installs. Without them YouTube only offers storyboards
+    // -> "Requested format is not available". Let yt-dlp fetch the solver when it is new enough.
+    const vm = /^(\d{4})\.(\d{2})\.(\d{2})/.exec(eng.ytVersion || '');
+    if (vm && Number(vm[1] + vm[2] + vm[3]) >= 20251022) a.push('--remote-components', 'ejs:github');
     if (COOKIES_FILE) a.push('--cookies', COOKIES_FILE);
     else if (COOKIES_BROWSER) a.push('--cookies-from-browser', COOKIES_BROWSER);
     return a;
