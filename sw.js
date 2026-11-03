@@ -10,7 +10,7 @@
      pings and third-party origins always go straight to the network.
 */
 
-const VERSION = 'v34';
+const VERSION = 'v35';
 const SHELL_CACHE = `sk-shell-${VERSION}`;
 const RUNTIME_CACHE = `sk-runtime-${VERSION}`;
 
