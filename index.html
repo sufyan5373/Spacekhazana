@@ -5908,12 +5908,12 @@ body.dark-mode .skm-item .skm-ar{color:#cfcaff}
                                 </div>
                             </div>
 
-                            <!-- Search YouTube / paste a link → saved as an MP3 (powered by the Khazana-Hole engine) -->
+                            <!-- Search YouTube: opens the results in a new tab -->
                             <div class="hole-search" id="musicFind">
                                 <form class="hole-form" id="holeForm" onsubmit="holeSubmit(event)">
                                     <div class="hole-input-wrap">
                                         <svg class="sk-icon" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" width="18" height="18"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
-                                        <input id="holeInput" class="hole-input" type="text" placeholder="Search songs or paste a link" aria-label="Search songs or paste a YouTube link" title="Search songs or paste a YouTube link" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+                                        <input id="holeInput" class="hole-input" type="text" placeholder="Search songs on YouTube" aria-label="Search songs on YouTube" title="Search songs or paste a YouTube link" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
                                     </div>
                                     <button class="music-btn primary" id="holeGo" type="submit">Search</button>
                                 </form>
@@ -5964,19 +5964,6 @@ body.dark-mode .skm-item .skm-ar{color:#cfcaff}
 
                             <div class="music-list" id="musicListArea"></div>
 
-                            <!-- Search results (inline, replaces the list while open) -->
-                            <div class="hole-pane" id="musicHolePane">
-                                <div class="hole-head">
-                                    <div class="hole-head-title" id="holeHeadTitle">Results</div>
-                                    <div class="hole-head-right">
-                                        <label for="holeAlbum">Save to</label>
-                                        <select id="holeAlbum" class="hole-select" onchange="holeAlbumChanged(this.value)" aria-label="Album to save into"></select>
-                                        <button class="music-btn ghost" type="button" onclick="holeClose(true)">Close</button>
-                                    </div>
-                                </div>
-                                <div id="holeBanner"></div>
-                                <div class="hole-results" id="holeResults"></div>
-                            </div>
 
                             <!-- Now playing bar (audio + local video) -->
                             <div class="music-player-bar" id="musicPlayerBar" style="display:none;">
@@ -12863,324 +12850,20 @@ body.dark-mode .skm-item .skm-ar{color:#cfcaff}
             try { localStorage.setItem('sk_music_vol', String(_musicVol)); localStorage.setItem('sk_music_muted', _musicMuted ? '1' : '0'); } catch (e) { /* storage blocked */ }
         }
 
-        /* ═══════════════ KHAZANA-HOLE · search YouTube → save as MP3 ═══════════════
-         *  The search bar at the top of the Music page. Type a song / artist or
-         *  paste a YouTube / YouTube Music link; results appear inline; clicking
-         *  "Save" runs the server-side yt-dlp + ffmpeg pipeline
-         *  (/api/khazana-hole/*), then pushes the finished, tagged MP3 through the
-         *  app's normal upload path into the chosen album - so it shows up in the
-         *  Music library like any other track.
-         * ═════════════════════════════════════════════════════════════════════ */
-        const HOLE_API = () => `${API_HOST}/api/khazana-hole`;
-        let _holeOpen = false;
-        let _holeResults = [];
-        let _holeStatus = {};            // videoId → { state:'idle'|'busy'|'done'|'error', stage, pct, determinate, meta, error, albumId, trackId }
-        let _holeHealth = null, _holeHealthAt = 0;
-        let _holeLastQuery = '';
-        let _holeAlbumPromise = null;
-
-        function holeToast(msg, isError) {
-            showToast(msg, isError ? true : false, isError ? undefined : 'check');
-            if (isError) { const t = document.getElementById('_sk_toast'); if (t) { clearTimeout(t._timer); t._timer = setTimeout(() => { t.style.opacity = '0'; }, 5500); } }
-        }
-        function holeNiceError(err) {
-            if (err && err.name === 'TypeError') return 'Can\'t reach the server. Check your connection.';
-            return (err && err.message) || 'Something went wrong.';
-        }
-        function blobToDataUrl(blob) {
-            return new Promise((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => resolve(null); r.readAsDataURL(blob); });
-        }
-
-        /* ── open / close the results panel ── */
-        function holeOpen() {
-            _holeOpen = true;
-            mEl('musicHolePane').style.display = 'flex';
-            mEl('musicListArea').style.display = 'none';
-            const up = mEl('musicUploadArea'), tb = mEl('musicToolbar');
-            if (up) up.style.display = 'none';
-            if (tb) tb.style.display = 'none';
-        }
-        function holeClose(clearInput) {
-            const wasOpen = _holeOpen;
-            _holeOpen = false;
-            const pane = mEl('musicHolePane');
-            if (pane) pane.style.display = 'none';
-            if (clearInput) { const i = mEl('holeInput'); if (i) i.value = ''; }
-            if (wasOpen) {
-                const list = mEl('musicListArea'); if (list) list.style.display = 'block';
-                const up = mEl('musicUploadArea'), tb = mEl('musicToolbar');
-                if (up) up.style.display = _musicViewMode === 'album' ? 'block' : 'none';
-                if (tb) tb.style.display = _musicViewMode === 'album' ? 'flex' : 'none';
-            }
-        }
-
-        /* ── engine health ── */
-        async function holeHealthCheck() {
-            _holeHealthAt = Date.now();
-            try {
-                const r = await authFetch(`${HOLE_API()}/health`);
-                if (r.status === 404) _holeHealth = { ok: false, missing: true };
-                else if (!r.ok) _holeHealth = { ok: false, unreachable: true };
-                else _holeHealth = await r.json();
-            } catch (e) { _holeHealth = { ok: false, unreachable: true }; }
-            holeRenderBanner();
-        }
-        function holeRenderBanner() {
-            const b = mEl('holeBanner'); if (!b) return;
-            const h = _holeHealth;
-            let msg = '';
-            if (h && !h.ok) {
-                if (h.missing) msg = 'The Khazana-Hole routes aren\'t installed on the server yet (add khazana-hole-routes.js to server.js).';
-                else if (h.unreachable) msg = 'Can\'t reach the Khazana-Hole engine on the server right now.';
-                else msg = h.note || 'The media engine isn\'t ready on the server.';
-            }
-            b.innerHTML = msg ? '<div class="hole-banner">' + musicIcon('alert', 16, 2) + '<span>' + escHtml(msg) + '</span></div>' : '';
-        }
-
-        /* ── albums (where a saved song goes) ── */
-        async function musicRefreshAlbumsData() {
-            try {
-                const res = await authFetch(`${API_HOST}/api/music/albums`);
-                const d = await res.json();
-                if (Array.isArray(d)) { _musicAlbums = d; _musicAlbums.forEach(a => ensureOfflineFolderForAlbum(a)); }
-            } catch (e) { /* keep what we have */ }
-        }
-        function holeFillAlbumSelect() {
-            const el = mEl('holeAlbum'); if (!el) return;
-            const hole = _musicAlbums.find(a => String(a.name || '').toLowerCase() === 'khazana-hole');
-            let html = '';
-            if (!hole) html += '<option value="__new__">Khazana-Hole (new album)</option>';
-            html += _musicAlbums.map(a => `<option value="${escHtml(a.id)}">${escHtml(a.name)}</option>`).join('');
-            el.innerHTML = html;
-            let want = '';
-            if (_musicViewMode === 'album' && _musicCurrentAlbum) want = _musicCurrentAlbum.id;
-            else { try { want = localStorage.getItem('sk_hole_album') || ''; } catch (e) { /* storage blocked */ } }
-            if (!want || ![...el.options].some(o => o.value === want)) want = hole ? hole.id : '__new__';
-            el.value = want;
-        }
-        function holeAlbumChanged(v) { try { if (v && v !== '__new__') localStorage.setItem('sk_hole_album', v); } catch (e) { /* storage blocked */ } }
-        function holeResolveAlbum() {
-            const v = mEl('holeAlbum').value;
-            if (v && v !== '__new__') return Promise.resolve(v);
-            if (_holeAlbumPromise) return _holeAlbumPromise; // two saves at once must not create two albums
-            _holeAlbumPromise = (async () => {
-                await musicRefreshAlbumsData();
-                let a = _musicAlbums.find(x => String(x.name || '').toLowerCase() === 'khazana-hole');
-                if (!a) {
-                    const res = await authFetch(`${API_HOST}/api/music/albums`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Khazana-Hole', thumbnail: null }) });
-                    const data = await res.json();
-                    if (!res.ok) throw new Error(data.error || 'Could not create the Khazana-Hole album.');
-                    a = data; _musicAlbums.push(a); ensureOfflineFolderForAlbum(a);
-                }
-                holeFillAlbumSelect();
-                return a.id;
-            })();
-            _holeAlbumPromise.then(() => { _holeAlbumPromise = null; }, () => { _holeAlbumPromise = null; });
-            return _holeAlbumPromise;
-        }
-
-        /* ── search ── */
-        async function holeSubmit(e) {
-            if (e) e.preventDefault();
-            const q = mEl('holeInput').value.trim();
+        /* ═══════════════ SONG SEARCH · opens YouTube ═══════════════
+         *  The Khazana-Hole downloader was removed. The search bar on the Music
+         *  page now just opens the search (or the pasted link) on YouTube in a
+         *  new tab. No server involved.
+         * ═══════════════════════════════════════════════════════════ */
+        function holeSubmit(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            const inp = document.getElementById('holeInput');
+            const q = ((inp && inp.value) || '').trim();
             if (!q) return;
-            await holeSearch(q);
+            const url = /^https?:\/\//i.test(q) ? q : 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+            window.open(url, '_blank', 'noopener');
         }
-        async function holeSearch(q) {
-            _holeLastQuery = q;
-            holeOpen();
-            const looksLikeLink = /^(https?:\/\/|(www\.|m\.|music\.)?(youtube\.com|youtu\.be)\/)/i.test(q);
-            mEl('holeHeadTitle').textContent = looksLikeLink ? 'Looking up that link…' : 'Searching YouTube…';
-            mEl('holeResults').innerHTML = '<div class="hole-skel"></div><div class="hole-skel"></div><div class="hole-skel"></div>';
-            const go = mEl('holeGo'); go.disabled = true;
-            if (!_holeHealth || Date.now() - _holeHealthAt > 60000) holeHealthCheck(); else holeRenderBanner();
-            musicRefreshAlbumsData().then(holeFillAlbumSelect);
-            try {
-                const r = await authFetch(`${HOLE_API()}/search?q=${encodeURIComponent(q)}`);
-                const data = await r.json().catch(() => ({}));
-                if (!r.ok) throw new Error(data.error || (r.status === 404 ? 'Khazana-Hole isn\'t installed on the server yet.' : 'Search failed.'));
-                if (_holeLastQuery !== q) return; // a newer search replaced this one
-                _holeResults = Array.isArray(data.results) ? data.results : [];
-                holeRenderResults(data.mode);
-            } catch (err) {
-                if (_holeLastQuery !== q) return;
-                _holeResults = [];
-                const msg = holeNiceError(err);
-                mEl('holeHeadTitle').textContent = 'Search failed';
-                mEl('holeResults').innerHTML = '<div class="hole-banner err">' + musicIcon('alert', 16, 2) + '<span>' + escHtml(msg) + '</span></div>';
-                holeToast(msg, true);
-            } finally { go.disabled = false; }
-        }
-
-        function holeRenderResults(mode) {
-            const box = mEl('holeResults');
-            mEl('holeHeadTitle').textContent = mode === 'url' ? 'Video from your link' : (_holeResults.length ? `Results for “${_holeLastQuery}”` : 'No results');
-            if (!_holeResults.length) {
-                box.innerHTML = musicEmptyHtml('search', 'Nothing found', 'Try different words, or paste the YouTube link of the song directly.');
-                return;
-            }
-            box.innerHTML = _holeResults.map(r => holeRowHtml(r, true)).join('');
-        }
-
-        function holeRowHtml(r, animate) {
-            if (!r || !/^[\w-]{11}$/.test(r.id || '')) return '';
-            const id = r.id;
-            const s = _holeStatus[id] || { state: 'idle' };
-            const cls = (s.state === 'busy' ? ' busy' : s.state === 'done' ? ' done' : s.state === 'error' ? ' error' : '') + (animate ? '' : ' noanim');
-            let btn;
-            if (s.state === 'busy') btn = `<button class="music-btn primary hole-save" disabled>${musicSpinner(15)} Saving…</button>`;
-            else if (s.state === 'done') btn = `<button class="music-btn saved hole-save" onclick="holePlaySaved('${id}')">${musicIcon('check', 15, 2.6)} Saved · Play</button>`;
-            else btn = `<button class="music-btn primary hole-save" onclick="holeSave('${id}')">${musicIcon('download', 15, 2.2)} ${s.state === 'error' ? 'Retry' : 'Save to SpaceKhazana'}</button>`;
-            const pct = Math.max(0, Math.min(100, s.pct || 0));
-            const sub = s.meta ? `Saving as <b>${escHtml(s.meta.artist)} - ${escHtml(s.meta.title)}</b>` : '';
-            return `<div class="hole-result${cls}" data-hid="${id}">
-                <div class="hole-thumb"><img src="${escHtml(r.thumbnail || '')}" alt="" loading="lazy" onerror="this.style.display='none'">${r.durationText ? `<span class="hole-dur">${escHtml(r.durationText)}</span>` : ''}</div>
-                <div class="hole-info">
-                    <div class="hole-title">${escHtml(r.videoTitle || r.title)}</div>
-                    <div class="hole-channel">${escHtml(r.channel || r.artist || '')}</div>
-                    <div class="hole-progress">
-                        <div class="hole-stage">${musicSpinner(12)}<span>${escHtml(s.stage || '')}</span></div>
-                        <div class="hole-bar${s.determinate ? '' : ' indeterminate'}"><i style="width:${pct}%"></i></div>
-                        <div class="hole-channel hole-saving-as">${sub}</div>
-                    </div>
-                    <div class="hole-error">${escHtml(s.error || '')}</div>
-                </div>
-                ${btn}
-            </div>`;
-        }
-
-        /* Update a row without re-creating it while it is busy (keeps the bar animating smoothly). */
-        function holeUpdateRow(id) {
-            const r = _holeResults.find(x => x.id === id); if (!r) return;
-            const row = document.querySelector('#holeResults [data-hid="' + id + '"]'); if (!row) return;
-            const s = _holeStatus[id] || { state: 'idle' };
-            if (s.state === 'busy' && row.classList.contains('busy')) {
-                const stage = row.querySelector('.hole-stage span'); if (stage) stage.textContent = s.stage || '';
-                const bar = row.querySelector('.hole-bar'), fill = bar && bar.querySelector('i');
-                if (bar) bar.classList.toggle('indeterminate', !s.determinate);
-                if (fill && s.determinate) fill.style.width = Math.max(0, Math.min(100, s.pct || 0)) + '%';
-                const sa = row.querySelector('.hole-saving-as');
-                if (sa && s.meta) sa.innerHTML = 'Saving as <b>' + escHtml(s.meta.artist) + ' - ' + escHtml(s.meta.title) + '</b>';
-                return;
-            }
-            row.outerHTML = holeRowHtml(r, false);
-        }
-
-        /* ── save one result ── */
-        async function holeSave(videoId) {
-            const r = _holeResults.find(x => x.id === videoId); if (!r) return;
-            if (_holeStatus[videoId] && _holeStatus[videoId].state === 'busy') return;
-            if (_holeHealth && !_holeHealth.ok) { holeToast(_holeHealth.missing ? 'Khazana-Hole isn\'t installed on the server yet.' : (_holeHealth.note || 'The media engine isn\'t ready on the server.'), true); return; }
-            const st = _holeStatus[videoId] = { state: 'busy', stage: 'Starting…', pct: 0, determinate: false };
-            holeUpdateRow(videoId);
-            let jobId = null;
-            try {
-                const albumId = await holeResolveAlbum();
-                st.albumId = albumId;
-                const album = _musicAlbums.find(a => a.id === albumId) || { id: albumId, name: 'Khazana-Hole' };
-                const before = await holeListTracks(albumId);
-                const beforeIds = new Set(before.map(t => t.id));
-
-                st.stage = 'Fetching metadata…'; holeUpdateRow(videoId);
-                const res = await authFetch(`${HOLE_API()}/download`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ videoId, albumId }) });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.error || 'Could not start the download.');
-                jobId = data.jobId;
-
-                let job;
-                for (;;) {
-                    await musicSleep(700);
-                    const jr = await authFetch(`${HOLE_API()}/jobs/${jobId}`);
-                    if (jr.status === 404) throw new Error('The download expired on the server. Please try again.');
-                    job = await jr.json();
-                    if (job.failed) throw new Error(job.error || 'Download failed.');
-                    st.stage = job.stage; st.pct = job.pct; st.determinate = job.state === 'downloading' || job.state === 'converting';
-                    if (job.meta) st.meta = job.meta;
-                    holeUpdateRow(videoId);
-                    if (job.done) break;
-                }
-
-                if (!job.result.savedByServer) {
-                    st.stage = 'Saving to SpaceKhazana…'; st.pct = 0; st.determinate = true; holeUpdateRow(videoId);
-                    const fr = await authFetch(`${HOLE_API()}/jobs/${jobId}/file`);
-                    if (!fr.ok) throw new Error('Could not retrieve the converted file from the server.');
-                    const blob = await fr.blob();
-                    const file = new File([blob], job.result.fileName, { type: 'audio/mpeg' });
-                    await uploadFileWithProgress(file, { parentFolderId: albumId, relativePath: '' }, (loaded, total) => {
-                        st.pct = total ? (loaded / total) * 100 : 0; holeUpdateRow(videoId);
-                    });
-                }
-
-                // Find the new track, give it its cover art, cache it offline like any upload.
-                const after = await holeListTracks(albumId);
-                const fresh = after.filter(t => !beforeIds.has(t.id));
-                const newTrack = fresh.find(t => t.name === job.result.fileName) || fresh[fresh.length - 1] || after.filter(t => t.name === job.result.fileName).pop();
-                if (newTrack) {
-                    st.trackId = newTrack.id;
-                    holeRememberArt(newTrack.id, videoId);
-                    if (job.result.hasCover) {
-                        try {
-                            const cr = await authFetch(`${HOLE_API()}/jobs/${jobId}/cover`);
-                            if (cr.ok) {
-                                const dataUrl = await blobToDataUrl(await cr.blob());
-                                if (dataUrl) {
-                                    newTrack.videoThumbnail = dataUrl;
-                                    await authFetch(`${API_HOST}/api/music/tracks/${newTrack.id}/thumbnail`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ thumbnail: dataUrl }) });
-                                }
-                            }
-                        } catch (e) { /* art is a nicety; the song is already saved */ }
-                    }
-                    try { autoSaveTrackOffline(newTrack, ensureOfflineFolderForAlbum(album)); } catch (e) { /* best-effort */ }
-                }
-                if (_musicViewMode === 'album' && _musicCurrentAlbum && _musicCurrentAlbum.id === albumId) {
-                    _musicTracks = after;
-                    _musicQueueIndex = _musicNowTrackId ? _musicTracks.findIndex(t => t.id === _musicNowTrackId) : -1;
-                    renderMusicTrackList();
-                }
-                st.state = 'done'; st.stage = 'Saved!'; st.pct = 100;
-                holeUpdateRow(videoId);
-                holeToast('Saved to SpaceKhazana: ' + (st.meta ? st.meta.title : job.result.fileName.replace(/\.mp3$/i, '')), false);
-            } catch (err) {
-                st.state = 'error'; st.error = holeNiceError(err);
-                holeUpdateRow(videoId);
-                holeToast(st.error, true);
-            } finally {
-                if (jobId) { authFetch(`${HOLE_API()}/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {}); }
-            }
-        }
-
-        async function holeListTracks(albumId) {
-            try {
-                const res = await authFetch(`${API_HOST}/api/music/albums/${albumId}/tracks`);
-                const d = await res.json();
-                return Array.isArray(d) ? d : [];
-            } catch (e) { return []; }
-        }
-        function holeRememberArt(trackId, videoId) {
-            try {
-                const m = holeArtMap(); m[trackId] = videoId;
-                const keys = Object.keys(m); if (keys.length > 2000) delete m[keys[0]];
-                localStorage.setItem('sk_hole_art', JSON.stringify(m));
-            } catch (e) { /* storage blocked */ }
-        }
-
-        async function holePlaySaved(videoId) {
-            const s = _holeStatus[videoId]; if (!s || !s.albumId) return;
-            await musicRefreshAlbumsData();
-            await openMusicAlbum(s.albumId); // closes the results panel via musicApplyView
-            const idx = _musicTracks.findIndex(t => t.id === s.trackId);
-            if (idx >= 0) playMusicTrack(idx); else holeToast('Saved. Open the album to play it.', false);
-        }
-
-        // Pasting a YouTube link searches immediately - no extra click.
-        document.addEventListener('paste', (e) => {
-            if (!e.target || e.target.id !== 'holeInput') return;
-            setTimeout(() => {
-                const v = e.target.value.trim();
-                if (/^(https?:\/\/)?((www|m|music)\.)?(youtube\.com|youtu\.be)\//i.test(v)) holeSubmit();
-            }, 60);
-        });
-
+        function holeClose() { /* nothing to close any more */ }
 
 
         /* ── EDUCATION ──────────────────────────────────────────────────
