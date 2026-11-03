@@ -1,124 +1,26 @@
 {
   "name": "spacekhazana",
-  "productName": "SpaceKhazana",
-  "version": "0.1.0",
-  "description": "SpaceKhazana private cloud, desktop edition",
-  "author": {
-    "name": "Sufyan",
-    "email": "support@spacekhazana.com"
-  },
-  "homepage": "https://www.spacekhazana.com",
-  "license": "UNLICENSED",
+  "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "desktop": "electron desktop/main.js",
-    "dist:win": "electron-builder --win --x64 && node scripts/make-releases.js",
-    "dist:mac": "electron-builder --mac && node scripts/make-releases.js",
-    "dist:linux": "electron-builder --linux && node scripts/make-releases.js",
-    "releases": "node scripts/make-releases.js"
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
-    "@aws-sdk/lib-storage": "^3.1159.0",
-    "@simplewebauthn/server": "^13.0.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/lib-storage": "^3.700.0",
+    "@aws-sdk/s3-request-presigner": "^3.700.0",
+    "@simplewebauthn/server": "*",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^18.0.9",
+    "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "express-rate-limit": "^7.4.0",
-    "google-auth-library": "^9.14.0",
     "helmet": "^7.1.0",
-    "multer": "^1.4.5-lts.2",
-    "nodemailer": "^6.9.14"
-  },
-  "optionalDependencies": {
-    "@aws-sdk/client-s3": "^3.1159.0",
-    "@aws-sdk/s3-request-presigner": "^3.1159.0",
-    "sharp": "^0.33.4"
-  },
-  "devDependencies": {
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8"
-  },
-  "build": {
-    "appId": "com.spacekhazana.app",
-    "productName": "SpaceKhazana",
-    "asar": false,
-    "executableName": "SpaceKhazana",
-    "directories": {
-      "output": "dist",
-      "buildResources": "desktop/build"
-    },
-    "extraMetadata": {
-      "main": "desktop/main.js"
-    },
-    "files": [
-      "desktop/main.js",
-      "*.js",
-      "*.html",
-      "*.json",
-      "icons/**",
-      "vendor/**",
-      "images/**",
-      "videos/spacekhazanalogin.mp4",
-      "node_modules/**",
-      "!data/**",
-      "!dist/**",
-      "!downloads/**",
-      "!mobile/**",
-      "!scripts/**",
-      "!**/*.map"
-    ],
-    "win": {
-      "icon": "icons/icon-512.png",
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "msi",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "SpaceKhazana-${version}-windows-x64.${ext}"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": false,
-      "createDesktopShortcut": true,
-      "artifactName": "SpaceKhazana-${version}-windows-x64-setup.${ext}"
-    },
-    "mac": {
-      "icon": "icons/icon-512.png",
-      "category": "public.app-category.productivity",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "arm64",
-            "x64"
-          ]
-        }
-      ],
-      "artifactName": "SpaceKhazana-${version}-macos-${arch}.${ext}"
-    },
-    "linux": {
-      "icon": "icons/icon-512.png",
-      "category": "Utility",
-      "maintainer": "Sufyan <support@spacekhazana.com>",
-      "target": [
-        "AppImage",
-        "deb",
-        "rpm",
-        "pacman"
-      ],
-      "artifactName": "SpaceKhazana-${version}-linux-${arch}.${ext}"
-    }
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.14",
+    "sharp": "^0.33.0"
   }
 }
