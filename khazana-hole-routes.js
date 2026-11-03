@@ -160,7 +160,7 @@ function friendlyYtError(stderr) {
   const l = line.toLowerCase();
   if (/private video/.test(l)) return { code: 'private', message: 'That video is private.' };
   if (/sign in to confirm your age|age[- ]restricted|inappropriate for some users/.test(l)) return { code: 'age', message: 'That video is age-restricted and can\'t be fetched without a signed-in session.' };
-  if (/sign in to confirm you.?re not a bot|confirm you.?re not a bot/.test(l)) return { code: 'bot_check', message: 'YouTube is asking this server to prove it\'s not a bot. Set KH_COOKIES_BROWSER (e.g. chrome) on the server and retry.' };
+  if (/sign in to confirm you.?re not a bot|confirm you.?re not a bot/.test(l)) return { code: 'bot_check', message: 'YouTube is asking this server to prove it\'s not a bot. Add fresh YouTube cookies on the server (KH_COOKIES_B64 or KH_COOKIES_FILE; KH_COOKIES_BROWSER on a PC) and retry.' };
   if (/not available in your country|blocked it in your country|geo/.test(l)) return { code: 'geo', message: 'That video isn\'t available in the server\'s region.' };
   if (/copyright|blocked it on copyright/.test(l)) return { code: 'copyright', message: 'That video is blocked for copyright reasons.' };
   if (/video unavailable|this video is not available|has been removed|account.*terminated|does not exist/.test(l)) return { code: 'unavailable', message: 'That video is unavailable or has been removed.' };
@@ -201,7 +201,27 @@ module.exports = function createKhazanaHole(options = {}) {
 
   const tmpRoot = path.resolve(tmpRootOpt); // sendFile() needs absolute paths
   const COOKIES_BROWSER = process.env.KH_COOKIES_BROWSER || '';
-  const COOKIES_FILE = process.env.KH_COOKIES_FILE || '';
+  // Cookies for YouTube's bot check. Three ways to supply them (first match wins):
+  //   KH_COOKIES_B64   base64 of a Netscape cookies.txt (easiest on Render: no secret file needed)
+  //   KH_COOKIES_FILE  path to a cookies.txt (e.g. /etc/secrets/cookies.txt on Render)
+  //   KH_COOKIES_BROWSER  chrome / edge / firefox (only works where that browser is installed, e.g. your PC)
+  // yt-dlp rewrites its cookie file, and Render secret files are read-only, so the
+  // cookies are always copied to a writable temp file first.
+  let COOKIES_FILE = '';
+  try {
+    const dest = path.join(os.tmpdir(), 'kh-cookies.txt');
+    if (process.env.KH_COOKIES_B64) {
+      fs.writeFileSync(dest, Buffer.from(process.env.KH_COOKIES_B64.replace(/\s+/g, ''), 'base64'), { mode: 0o600 });
+      COOKIES_FILE = dest;
+    } else if (process.env.KH_COOKIES_FILE) {
+      fs.copyFileSync(process.env.KH_COOKIES_FILE, dest);
+      try { fs.chmodSync(dest, 0o600); } catch { /* windows */ }
+      COOKIES_FILE = dest;
+    }
+    if (COOKIES_FILE) console.log('[khazana-hole] using YouTube cookies file');
+  } catch (e) {
+    console.log('[khazana-hole] could not load cookies:', e.message);
+  }
 
   /* ── engine discovery (yt-dlp + ffmpeg) ── */
   const have = (cmd, args) => { try { return spawnSync(cmd, args, { timeout: 15000 }).status === 0; } catch { return false; } };
