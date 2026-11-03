@@ -339,7 +339,7 @@ module.exports = function createKhazanaHole(options = {}) {
 
   if (!COOKIES_FILE && COOKIES_BROWSER) cookieState.mode = 'browser';
 
-  function ytBaseArgs() {
+  function ytBaseArgs(variant = 0) {
     // Recent yt-dlp needs a JS runtime to solve YouTube's signature challenge;
     // without one only storyboards are offered ("requested format is not available").
     // The server already runs on Node, so reuse that exact binary.
@@ -352,9 +352,34 @@ module.exports = function createKhazanaHole(options = {}) {
     // -> "Requested format is not available". Let yt-dlp fetch the solver when it is new enough.
     const vm = /^(\d{4})\.(\d{2})\.(\d{2})/.exec(eng.ytVersion || '');
     if (vm && Number(vm[1] + vm[2] + vm[3]) >= 20251022) a.push('--remote-components', 'ejs:github');
-    if (COOKIES_FILE) a.push('--cookies', COOKIES_FILE);
-    else if (COOKIES_BROWSER) a.push('--cookies-from-browser', COOKIES_BROWSER);
+    // Variants are fallbacks for "Requested format is not available" (YouTube sometimes hands
+    // the default web client only storyboards). 0 = yt-dlp defaults, 1 = other clients that
+    // work with cookies, 2 = no cookies + clients that need neither cookies nor a PO token.
+    if (variant === 1) a.push('--extractor-args', 'youtube:player_client=tv,tv_simply,web_safari,mweb');
+    if (variant === 2) a.push('--extractor-args', 'youtube:player_client=android_vr,tv_simply');
+    if (variant !== 2) {
+      if (COOKIES_FILE) a.push('--cookies', COOKIES_FILE);
+      else if (COOKIES_BROWSER) a.push('--cookies-from-browser', COOKIES_BROWSER);
+    }
     return a;
+  }
+
+  /** Runs fn(variant) for variants 0..2, moving on only for "no formats" failures. */
+  async function withVariants(fn) {
+    let lastErr;
+    for (let v = 0; v < 3; v++) {
+      try {
+        const r = await fn(v);
+        if (v > 0) console.log('[khazana-hole] succeeded with fallback variant', v);
+        return r;
+      } catch (e) {
+        lastErr = e;
+        const st = String((e && e.stderr) || e && e.message || '');
+        if (!/requested format is not available|no audio|only images are available/i.test(st)) throw e;
+        console.log('[khazana-hole] no formats with variant', v, '-', st.split('\n').filter(Boolean).slice(-3).join(' | ').slice(0, 300));
+      }
+    }
+    throw lastErr;
   }
 
   function engineGuard() {
@@ -406,7 +431,7 @@ module.exports = function createKhazanaHole(options = {}) {
   }
 
   async function fetchInfo(videoUrl) {
-    const out = await runCapture(eng.yt, [...ytBaseArgs(), '--dump-single-json', '--skip-download', '--', videoUrl], { timeout: 45000 });
+    const out = await withVariants((v) => runCapture(eng.yt, [...ytBaseArgs(v), '--dump-single-json', '--skip-download', '--', videoUrl], { timeout: 45000 }));
     return JSON.parse(out);
   }
 
@@ -472,9 +497,13 @@ module.exports = function createKhazanaHole(options = {}) {
 
   /** Runs yt-dlp for the audio + thumbnail, parsing progress lines. */
   function ytDownload(job, videoUrl) {
+    return withVariants((v) => ytDownloadOnce(job, videoUrl, v));
+  }
+
+  function ytDownloadOnce(job, videoUrl, variant) {
     return new Promise((resolve, reject) => {
       const args = [
-        ...ytBaseArgs(),
+        ...ytBaseArgs(variant),
         '--newline', '-f', 'bestaudio/best', '--max-filesize', '200M',
         '--write-thumbnail', '--no-part',
         '--progress-template', 'download:PCT %(progress._percent_str)s',
