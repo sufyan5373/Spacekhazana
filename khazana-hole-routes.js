@@ -175,7 +175,7 @@ function friendlyYtError(stderr) {
   if (/video unavailable|this video is not available|has been removed|account.*terminated|does not exist/.test(l)) return { code: 'unavailable', message: 'That video is unavailable or has been removed.' };
   if (/members-only|join this channel/.test(l)) return { code: 'members', message: 'That video is members-only.' };
   if (/premieres in|live event will begin/.test(l)) return { code: 'upcoming', message: 'That video hasn\'t premiered yet.' };
-  if (/page needs to be reloaded/.test(l)) return { code: 'stale_session', message: 'YouTube rejected the session. Update yt-dlp (nightly) or re-export fresh cookies, then retry.' };
+  if (/page needs to be reloaded/.test(l)) return { code: 'stale_session', message: 'YouTube rejected the cookies (they were rotated). Re-export cookies.txt from a private window on youtube.com/robots.txt, close the window right away, replace the secret file in Render, redeploy.' };
   if (/requested format is not available/.test(l)) return { code: 'format', message: 'No downloadable audio was found. The server\'s yt-dlp is probably outdated or missing its JS challenge solver: update yt-dlp (use the standalone binary) and check the server log.' };
   if (/larger than max-filesize|file is larger/.test(l)) return { code: 'too_big', message: 'That video is too large to convert.' };
   if (/unable to download|timed out|temporary failure|network|connection/.test(l)) return { code: 'network', message: 'Network problem while talking to YouTube. Try again in a moment.' };
@@ -375,7 +375,7 @@ module.exports = function createKhazanaHole(options = {}) {
       } catch (e) {
         lastErr = e;
         const st = String((e && e.stderr) || e && e.message || '');
-        if (!/requested format is not available|no audio|only images are available/i.test(st)) throw e;
+        if (!/requested format is not available|no audio|only images are available|page needs to be reloaded/i.test(st)) throw e;
         console.log('[khazana-hole] no formats with variant', v, '-', st.split('\n').filter(Boolean).slice(-3).join(' | ').slice(0, 300));
       }
     }
